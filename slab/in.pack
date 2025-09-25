@@ -1,0 +1,67 @@
+##################
+# VARIABLES
+##################
+
+# variables to be inputted later when script is implemented 
+variable packing_density equal 0.3
+variable num_chains equal 256 
+variable chain_length equal 32
+
+# chain properties 
+variable sigma equal 1.0
+variable particle_vol equal (4.0/3.0)*PI*(0.5${sigma})^3
+
+variable n_beads equal 2*${num_chains}*${chain_length} # have positive and negative chains
+variable tot_vol equal ${n_beads}*${particle_vol}
+
+# simulation and creation box dimensions (were tuned such that there is no passing of 
+# molecules through z boundaries)
+variable Lz equal ${chain_length}*6.0
+variable Lz_pack equal ${Lz}/2.0 
+variable L equal  2*(${tot_vol}/(${Lz_pack}*${packing_density}))^0.5
+variable L equal 2*${chain_length}
+
+variable zbox equal ${Lz}/2.0
+variable zpack equal ${Lz_pack}/2.0
+variable boxside equal ${L}/2.0
+####################
+### MOLECULE FILE
+####################
+variable mol_file string ${TOPO_FILE}
+variable finalfile string 'packed.data'
+# variable periodic_file string 'packed_periodic.data'
+
+####################
+### PACKING CHAINS 
+####################
+units lj 
+atom_style full
+dimension 3 
+boundary p p p 
+region simbox   block  -${boxside} ${boxside} -${boxside} ${boxside} -${zbox} ${zbox} 
+region packbox  block  -${boxside} ${boxside} -${boxside} ${boxside} -${zpack} ${zpack} 
+
+# create the simulation box 
+create_box 4 simbox bond/types 1 extra/bond/per/atom 5 extra/special/per/atom 100
+molecule mol1 ${mol_file}
+
+# create and label chains 
+create_atoms  0   random    ${num_chains}   12345   packbox    mol mol1 12553 #remap no
+group positive type 1
+create_atoms  0   random    ${num_chains}   23456   packbox    mol mol1 12553 #remap no
+group negative subtract all positive
+
+# create and label salt ions
+# create_atoms  3   random    ${num_beads}    34567   packbox    
+
+# set the type of the atoms 
+set group positive type 1 
+set group negative type 2 
+
+mass    * 1.0
+
+# change_box all boundary p p p
+# write_data   ${periodic_file} nofix nocoeff 
+change_box all boundary p p s 
+write_data   ${finalfile} nofix nocoeff 
+
