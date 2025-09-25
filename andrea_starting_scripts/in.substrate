@@ -1,0 +1,108 @@
+# 3d Lennard-Jones Polymer melt
+
+#package intel 2 mode mixed balance 0
+#package omp 0
+#suffix intel
+
+units		lj
+atom_style	bond
+dimension	3
+boundary	p p fs
+special_bonds fene
+
+read_data	start/start.dat
+
+variable sigmaSub equal 0.8
+variable spacing equal 2^(1/6)*${sigmaSub}
+variable diametro equal ${spacing}/sqrt(2)
+variable rhostar equal sqrt(2)*(${diametro}^(-3.0))
+lattice         fcc ${rhostar} origin 0.0 0.0 0.22296544
+
+#bond_style	fene
+#bond_coeff	1 30.0 1.5 1.0 1.0
+bond_style 	harmonic
+bond_coeff 	1 50 0.9
+variable        wrcut equal 2.5
+pair_style	lj/cut 2.5
+pair_coeff	1 * 1.0 1.0 2.5
+pair_coeff      2 2 0.0 1.0 2.5
+#pair_coeff	1 1 1.0 1.0 2.5
+pair_modify	shift yes
+
+variable	Temp equal 1.5
+variable	run equal 1
+variable	seed equal 663847
+variable	rand1 equal v_seed+v_run
+variable	vx equal vcm(all,x)
+variable 	vy equal vcm(all,y)
+variable 	vz equal vcm(all,z)
+
+velocity all create ${Temp} ${rand1} loop geom dist gaussian sum yes mom yes
+variable	dt_integration equal 0.003
+timestep	${dt_integration}
+neighbor	0.3 bin
+neigh_modify delay 0 every 20 check no
+variable	Tdamping equal 100*${dt_integration}
+
+fix walls all wall/lj93 zlo EDGE 1.0 1.0 ${wrcut} zhi EDGE 1.0 1.0 ${wrcut}
+fix_modify walls energy yes
+
+minimize 1.0e-6 1.0e-6 1000000 1000000
+
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+thermo 5000
+thermo_style custom step temp press pe etotal vol
+
+restart 1000000 lmp_bin/Conf_*.bin
+
+reset_timestep 0
+run 100000
+
+# nvt normal minimization
+
+bond_style	harmonic
+bond_coeff	1 555.5 0.9
+
+variable	Temp equal 0.5
+
+minimize 1.0e-6 1.0e-6 1000000 1000000
+
+write_data endMinimize.dat
+
+unfix nvt1
+unfix walls
+
+variable	topSubstrate equal zlo/${spacing}+0.1
+variable 	elongment equal 0.3
+change_box all z delta -${elongment} 0.0 units box
+
+write_data endChangeBox.dat
+
+region substrate plane 0 0 ${topSubstrate} 0 0 -1
+create_atoms 2 region substrate
+
+#pair_coeff     1 2 1.0 1.0 2.5
+#pair_coeff     2 2 0.0 1.0 2.5
+
+change_box all z delta -1 0.0
+
+group poly type 1
+group subs type 2
+
+fix tether subs spring/self 100.0
+fix_modify tether energy yes
+fix nvt2 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+thermo 1000
+thermo_style custom step temp press pe etotal vol
+
+restart 500 lmp_bin/Conf_*.bin
+
+dump mydump all custom 500 lmp_data/Conf_*.dat id type xu yu zu vx vy vz
+dump_modify mydump format line "%d %d %.16lf %.16lf %.16lf %.16lf %.16lf %.16lf"
+dump_modify mydump sort id
+
+reset_timestep 0
+run 100000
+
