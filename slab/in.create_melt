@@ -44,7 +44,7 @@ variable runtimeShort equal 100000
 
 # final thickness calculation      
 #TODO make Lbox, target_density, and tot_chainVol inputted 
-variable Lbox equal 80.0           
+variable Lbox equal 64.0           
 variable target_density equal 0.8 
 
 variable sigma equal 1.0
@@ -67,7 +67,7 @@ compute	stressA all stress/atom NULL
 compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 variable	pz equal -(c_p[3])/(vol)
 variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
-thermo_style	custom step temp ebond epair ke etotal enthalpy vol density press v_pxy v_pz
+thermo_style	custom step temp time ebond epair ke etotal enthalpy vol density press v_pxy v_pz spcpu cpuremain 
 thermo_modify line yaml format none
 
 ####################################
@@ -132,6 +132,7 @@ reset_timestep 0
 run ${runtime}
 
 write_data startEqui.data
+write_restart startEqui.bin
 undump mydumpSqeeze2
 unfix nvt1
 unfix shrink2
