@@ -136,39 +136,39 @@ write_restart startEqui.bin
 undump mydumpSqeeze2
 unfix nvt1
 unfix shrink2
-# 
-# ####################################
-# #### EQUILIBRATION
-# ####################################
-# fix stabilize all momentum 1 linear 1 1 1
-# reset_timestep 0
-# 
-# fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
-# run ${runtime}
-# unfix npt1
-# 
-# fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
-# run ${runtime}
-# unfix npt2
-# 
-# fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
-# run ${runtimeShort}
-# 
-# reset_timestep 0
-# unfix walls
-# change_box all boundary p p s
-# 
-# restart 1000000 Conf_*.bin
-# 
-# dump mydumpEqui stars custom 100000 Conf_*.dat id type xu yu zu vx vy vz
-# dump_modify mydumpEqui sort id
-# 
-# run ${runtimeShort}
-# 
-# write_data startProduction.data
-# write_restart startProduction.bin
-# unfix npt3
-# undump mydumpEqui
+
+####################################
+#### EQUILIBRATION
+####################################
+fix stabilize all momentum 1 linear 1 1 1
+reset_timestep 0
+
+fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
+run ${runtime}
+unfix npt1
+
+fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
+run ${runtime}
+unfix npt2
+
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
+run ${runtimeShort}
+
+reset_timestep 0
+unfix walls
+change_box all boundary p p s
+
+restart 1000000 lmp_bin/Conf_*.bin
+
+dump mydumpEqui stars custom 100000 lmp_data/Conf_*.dat id type xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run ${runtimeShort}
+
+write_data startProduction.data
+write_restart startProduction.bin
+unfix npt3
+undump mydumpEqui
 # 
 # ####################################
 # #### ELONGATION
