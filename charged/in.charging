@@ -1,0 +1,114 @@
+units         lj
+atom_style    full
+dimension     3
+
+boundary p p p
+
+neighbor 0.8 bin
+
+pair_style    soft 1.0
+bond_style    harmonic
+special_bonds fene
+read_data relaxed.data 
+
+###################################
+####  GROUPS
+####################################
+
+group  pos_chains  type 1
+group  neg_chains  type 2
+
+####################################
+####  VARIABLES DEFINITION
+####################################
+
+variable Temp equal 1.0
+variable Temp2 equal 0.1
+variable PressAnn equal 10.0
+variable PressEq equal 0.0
+variable dt equal 0.005
+variable Tdamping equal 100*${dt}
+variable Pdamping equal 1000*${dt}
+variable runtime equal 4000000
+variable runtimeShort equal 100000
+
+variable Lbox equal 80.0
+variable target_density equal 0.8
+variable thick1 equal 15.0
+variable thick2 equal 10.0
+
+variable thermoT equal 1000
+variable velSeed equal 934851
+
+variable lSeed equal 12345
+####################################
+#### THERMO-STYLE
+####################################
+
+thermo  ${thermoT}
+
+compute	stressA all stress/atom NULL
+compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+variable	pz equal -(c_p[3])/(vol)
+variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
+thermo_style	custom step temp ebond epair ke etotal enthalpy vol density press v_pxy v_pz
+
+####################################
+#### INTEGRATION
+####################################
+
+velocity     all create ${Temp} ${velSeed}
+timestep      ${dt}
+
+fix nve1 all nve 
+fix solvent all langevin 1.0 1.0 100 ${lSeed}
+####################################
+#### RAMPING UP CHARGES
+####################################
+set group pos_chains charge 0.001
+set group neg_chains charge -0.001
+variable rampChargePlus equal ramp(0.001,1.0)
+variable rampChargeMinus equal ramp(-0.001,-1.0)
+
+fix chargingPlus pos_chains adapt 10 atom charge v_rampChargePlus
+fix chargingMinus neg_chains adapt 10 atom charge v_rampChargeMinus
+
+# Changing to lj/coul potential 
+pair_style hybrid/overlay lj/cut 2.5 coul/long 10.0 
+pair_coeff * * lj/cut 1.0 1.0 2.5
+pair_coeff * * coul/long 
+
+# Increasing box size to avoid self-interaction 
+variable ZLO equal zlo
+variable ZHI equal zhi 
+variable zlo_start equal ${ZLO}
+variable zhi_start equal ${ZHI} 
+change_box all z delta -2 15.0 units box# coul cutoff is 10.0
+
+print "Fixing wall is at zmin=${zlo_start}, zmax=${zhi_start}"
+variable zlo_now equal zlo
+variable zhi_now equal zhi
+print "Wall boundary is at zlo=${zlo_now}, zhi=${zhi_now}"
+# fix wallsRelaxZ all wall/lj93 zlo ${zlo_start} 1.0 1.0 1.12 zhi ${zhi_start} 1.0 1.0 1.12
+# fix_modify wallsRelaxZ energy yes
+fix wallZbottom all indent 10 plane z ${zlo_start} lo units box 
+fix wallZtop all indent 10 plane z ${zhi_start} hi units box 
+
+kspace_style pppm 1.0e-4
+kspace_modify mesh 10 10 10 
+
+
+dump dumpCharging all custom 5000 lmp_data/ConfCharging.dat id type xu yu zu vx vy vz mol q 
+dump_modify dumpCharging sort id
+
+reset_timestep 0 
+run 100000
+
+unfix chargingPlus
+unfix chargingMinus
+run 100000
+
+undump dumpCharging
+write_data start/startCharges.data
+write_restart lmp_bin/startCharges.bin
+
