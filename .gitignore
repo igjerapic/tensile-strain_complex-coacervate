@@ -1,0 +1,10 @@
+# data files from simulation
+lmp_data/
+lmp_bin/
+start/
+
+*.dat 
+*.data 
+*.trj
+*.lammps*
+
