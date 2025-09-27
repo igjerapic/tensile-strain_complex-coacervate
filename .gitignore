@@ -2,6 +2,7 @@
 lmp_data/
 lmp_bin/
 start/
+*.bin
 
 *.dat 
 *.data 
