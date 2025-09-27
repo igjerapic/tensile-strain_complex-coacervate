@@ -44,14 +44,14 @@ variable runtimeShort equal 100000
 
 # final thickness calculation      
 #TODO make Lbox, target_density, and tot_chainVol inputted 
-variable Lbox equal 64.0           
+variable thickFinal equal 8.0 # want a final thickness of 16 
 variable target_density equal 0.8 
 
 variable sigma equal 1.0
 variable bead_volume equal (4.0/3.0)*PI*(${sigma}*0.5)^3
 variable tot_vol equal ${bead_volume}*atoms
 
-variable thickFinal equal ${tot_vol}/(${target_density}*${Lbox}^2)/2 # half of total thickness
+variable Lbox equal (${tot_vol}/(${target_density}*${thickFinal}^2))^0.5/2 # half of total thickness
 variable thick1 equal ${thickFinal}+5.0
 
 variable thermoT equal 1000
@@ -146,13 +146,16 @@ reset_timestep 0
 fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
 run ${runtime}
 unfix npt1
+write_restart lmp_bin/PressAnn1.bin
 
 fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
 run ${runtime}
 unfix npt2
+write_restart lmp_bin/PressAnn2.bin
 
 fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
 run ${runtimeShort}
+write_restart lmp_bin/PressEq.bin
 
 reset_timestep 0
 unfix walls
