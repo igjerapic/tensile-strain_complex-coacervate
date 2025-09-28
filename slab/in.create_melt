@@ -2,12 +2,12 @@ units         lj
 atom_style    full
 dimension     3
 
-boundary p p f
+boundary p p p
 
 neighbor 0.8 bin
 
-read_data packed.data
-
+read_data packed_periodic.data
+change_box all boundary p p f
 ###################################
 ####  GROUPS
 ####################################
