@@ -2,12 +2,11 @@ units         lj
 atom_style    full
 dimension     3
 
-boundary p p p
+boundary p p f
 
 neighbor 0.8 bin
 
-read_data packed_periodic.data
-change_box all boundary p p f
+read_data packed.data
 ###################################
 ####  GROUPS
 ####################################
@@ -47,11 +46,7 @@ variable runtimeShort equal 100000
 variable thickFinal equal 8.0 # want a final thickness of 16 
 variable target_density equal 0.8 
 
-variable sigma equal 1.0
-variable bead_volume equal (4.0/3.0)*PI*(${sigma}*0.5)^3
-variable tot_vol equal ${bead_volume}*atoms
-
-variable Lbox equal (${tot_vol}/(${target_density}*${thickFinal}^2))^0.5/2 # half of total thickness
+variable Lbox equal (atoms/(${target_density}*2*${thickFinal}^2))^0.5/2 # half of total thickness
 variable thick1 equal ${thickFinal}+5.0
 
 variable thermoT equal 1000
