@@ -46,7 +46,8 @@ variable runtimeShort equal 100000
 variable thickFinal equal 8.0 # want a final thickness of 16 
 variable target_density equal 0.8 
 
-variable Lbox equal (atoms/(${target_density}*2*${thickFinal}^2))^0.5/2 # half of total thickness
+variable n_atoms equal atoms
+variable Lbox equal (${n_atoms}/(${target_density}*2*${thickFinal}))^0.5/2 # half of total thickness
 variable thick1 equal ${thickFinal}+5.0
 
 variable thermoT equal 1000
