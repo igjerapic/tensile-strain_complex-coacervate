@@ -1,0 +1,37 @@
+read_restart lmp_bin/startEqui.bin
+
+
+include settings.lmp
+
+####################################
+#### POTENTIALS 
+####################################
+# Keep attractive interactions
+pair_style lj/expand 1.12246 
+pair_coeff    * * 1.0 1.0  0.0   2.5
+
+####################################
+#### EQUILIBRATION
+####################################
+fix stabilize all momentum 1 linear 1 1 1
+
+#fix z walls moving with the box 
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+reset_timestep 0
+
+fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
+run ${runtime}
+unfix npt1
+write_restart lmp_bin/PressAnn1.bin
+
+fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
+run ${runtime}
+unfix npt2
+write_restart lmp_bin/PressAnn2.bin
+
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
+run ${runtimeShort}
+write_restart lmp_bin/PressEq.bin

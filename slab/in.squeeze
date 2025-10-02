@@ -1,0 +1,43 @@
+read_restart lmp_bin/relaxed.bin
+
+# Set Variables and bond styles 
+include settings.lmp
+
+####################################
+#### SQUEEZE BULK TO FILM
+####################################
+#change to repulsive lj interactions
+pair_style lj/expand 1.12246 
+pair_coeff    * * 1.0 1.0  0.0   1.12246
+
+#fix z walls moving with the box 
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+
+#squeeze the box to thin film
+fix shrink1 all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} z final -${thick1} ${thick1}
+
+dump mydumpSqeeze1 all custom 40000 lmp_data/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze1 sort id 
+
+reset_timestep 0
+run ${runtime}
+
+write_data firstSqueeze.data
+undump mydumpSqeeze1
+
+#turn on attraction and squeeze more
+pair_coeff    * * 1.0 1.0  0.0   2.5
+unfix shrink1
+fix shrink2 all deform 1 z final -${thickFinal} ${thickFinal}
+
+dump mydumpSqeeze2 all custom 40000 lmp_data/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze2 sort id 
+
+reset_timestep 0
+run ${runtime}
+
+write_data startEqui.data
+write_restart startEqui.bin
