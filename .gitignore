@@ -9,3 +9,6 @@ start/
 *.trj
 *.lammps*
 *.mol
+
+# exclude lists for syncing
+exclude-list
