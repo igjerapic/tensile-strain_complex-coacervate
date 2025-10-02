@@ -159,7 +159,7 @@ change_box all boundary p p s
 
 restart 1000000 lmp_bin/Conf_*.bin
 
-dump mydumpEqui all custom 100000 lmp_data/Conf_*.dat id type xu yu zu vx vy vz
+dump mydumpEqui all custom 100000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
 dump_modify mydumpEqui sort id
 
 run ${runtimeShort}
