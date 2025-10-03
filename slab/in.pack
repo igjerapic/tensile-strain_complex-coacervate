@@ -42,7 +42,7 @@ region simbox   block  -${boxside} ${boxside} -${boxside} ${boxside} -${zbox} ${
 region packbox  block  -${boxside} ${boxside} -${boxside} ${boxside} -${zpack} ${zpack} 
 
 # create the simulation box 
-create_box 5 simbox bond/types 2 extra/bond/per/atom 5 extra/special/per/atom 100
+create_box 5 simbox bond/types 1 extra/bond/per/atom 5 extra/special/per/atom 100
 molecule mol1 ${mol_file}
 
 # create and label chains 

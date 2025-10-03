@@ -31,8 +31,8 @@ fix rampSoft all adapt 1 pair soft a * * v_prefactor
 ####  VARIABLES DEFINITION
 ####################################
 
-variable Temp equal 1.0
-variable Temp2 equal 0.1
+variable Temp equal 1.5
+variable Temp2 equal 1.0
 variable PressAnn equal 10.0
 variable PressEq equal 0.0
 variable dt equal 0.005
@@ -48,7 +48,7 @@ variable target_density equal 0.8
 
 variable n_atoms equal atoms
 variable Lbox equal (${n_atoms}/(${target_density}*2*${thickFinal}))^0.5/2 # half of total thickness
-variable thick1 equal ${thickFinal}+5.0
+variable thick1 equal ${thickFinal}+4.0
 
 variable thermoT equal 1000
 variable velSeed equal 934851
@@ -86,7 +86,7 @@ fix_modify wallsRelaxZ energy yes
 reset_timestep 0 
 run ${runtimeShort} 
 
-write_data relaxed.data
+write_data lmp_data/relaxed.data
 unfix rampSoft
 unfix wallsRelaxZ
 
@@ -95,8 +95,8 @@ unfix wallsRelaxZ
 ####################################
 
 #change to repulsive LJ interactions
-pair_style lj/expand 1.12246 
-pair_coeff    * * 1.0 1.0  0.0   1.12246
+pair_style lj/cut 1.12246 
+pair_coeff    * * 1.0 1.0 1.12246
 
 #fix z walls moving with the box 
 variable wallL equal ramp(zlo,zlo)
@@ -107,28 +107,28 @@ fix_modify walls energy yes
 #squeeze the box to thin film
 fix shrink1 all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} z final -${thick1} ${thick1}
 
-dump mydumpSqeeze1 all custom 40000 lmp_data/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump mydumpSqeeze1 all custom 40000 lmp_trj/Squeez1.dat id type mol xu yu zu vx vy vz 
 dump_modify mydumpSqeeze1 sort id 
 
 reset_timestep 0
 run ${runtime}
 
-write_data firstSqueeze.data
+write_data lmp_data/firstSqueeze.data
 undump mydumpSqeeze1
 
 #turn on attraction and squeeze more
-pair_coeff    * * 1.0 1.0  0.0   2.5
+pair_coeff    * * 1.0 1.0 2.5
 unfix shrink1
 fix shrink2 all deform 1 z final -${thickFinal} ${thickFinal}
 
-dump mydumpSqeeze2 all custom 40000 lmp_data/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump mydumpSqeeze2 all custom 40000 lmp_trj/Squeez2.dat id type mol xu yu zu vx vy vz 
 dump_modify mydumpSqeeze2 sort id 
 
 reset_timestep 0
 run ${runtime}
 
-write_data startEqui.data
-write_restart startEqui.bin
+write_data lmp_data/startEqui.data
+write_restart lmp_bin/startEqui.bin
 undump mydumpSqeeze2
 unfix nvt1
 unfix shrink2
@@ -159,13 +159,13 @@ change_box all boundary p p s
 
 restart 1000000 lmp_bin/Conf_*.bin
 
-dump mydumpEqui all custom 100000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
+dump mydumpEqui all custom 40000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
 dump_modify mydumpEqui sort id
 
 run ${runtime}
 
-write_data startProduction.data
-write_restart startProduction.bin
+write_data lmp_data/startProduction.data
+write_restart lmp_bin/startProduction.bin
 # 
 # ####################################
 # #### ELONGATION
