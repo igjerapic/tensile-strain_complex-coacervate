@@ -21,8 +21,8 @@ special_bonds fene
 ####  VARIABLES DEFINITION
 ####################################
 
-variable Temp equal 1.0
-variable Temp2 equal 0.1
+variable Temp equal 1.5
+variable Temp2 equal 1.0
 variable PressAnn equal 10.0
 variable PressEq equal 0.0
 variable dt equal 0.005

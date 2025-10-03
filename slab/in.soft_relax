@@ -43,6 +43,6 @@ fix_modify wallsRelaxZ energy yes
 reset_timestep 0 
 run ${runtimeShort} 
 
-write_data relaxed.data
+write_data lmp_data/relaxed.data
 write_restart lmp_bin/relaxed.bin
 

@@ -11,8 +11,8 @@ include settings.lmp
 ####################################
 #### POTENTIALS 
 ####################################
-pair_style lj/expand 1.12246 
-pair_coeff    * * 1.0 1.0  0.0   2.5
+pair_style lj/cut 1.12246 
+pair_coeff    * * 1.0 1.0 2.5
 
 ####################################
 #### EQUILIBRATION
@@ -25,10 +25,10 @@ change_box all boundary p p s
 
 restart 1000000 lmp_bin/Conf_*.bin
 
-dump mydumpEqui all custom 100000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
+dump mydumpEqui all custom 40000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
 dump_modify mydumpEqui sort id
 
 run ${runtime}
 
-write_data startProduction.data
+write_data lmp_data/startProduction.data
 write_restart lmp_bin/startProduction.bin

@@ -7,8 +7,11 @@ include settings.lmp
 #### SQUEEZE BULK TO FILM
 ####################################
 #change to repulsive lj interactions
-pair_style lj/expand 1.12246 
-pair_coeff    * * 1.0 1.0  0.0   1.12246
+pair_style lj/cut 1.12246 
+pair_coeff    * * 1.0 1.0 1.12246
+
+# nvt integration throughout squeezing 
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
 
 #fix z walls moving with the box 
 variable wallL equal ramp(zlo,zlo)
@@ -19,25 +22,25 @@ fix_modify walls energy yes
 #squeeze the box to thin film
 fix shrink1 all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} z final -${thick1} ${thick1}
 
-dump mydumpSqeeze1 all custom 40000 lmp_data/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump mydumpSqeeze1 all custom 40000 lmp_trj/Squeez1.dat id type mol xu yu zu vx vy vz 
 dump_modify mydumpSqeeze1 sort id 
 
 reset_timestep 0
 run ${runtime}
 
-write_data firstSqueeze.data
+write_data lmp_data/firstSqueeze.data
 undump mydumpSqeeze1
 
 #turn on attraction and squeeze more
-pair_coeff    * * 1.0 1.0  0.0   2.5
+pair_coeff    * * 1.0 1.0 2.5
 unfix shrink1
 fix shrink2 all deform 1 z final -${thickFinal} ${thickFinal}
 
-dump mydumpSqeeze2 all custom 40000 lmp_data/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump mydumpSqeeze2 all custom 40000 lmp_trj/Squeez2.dat id type mol xu yu zu vx vy vz 
 dump_modify mydumpSqeeze2 sort id 
 
 reset_timestep 0
 run ${runtime}
 
-write_data startEqui.data
-write_restart startEqui.bin
+write_data lmp_data/startEqui.data
+write_restart lmp_bin/startEqui.bin
