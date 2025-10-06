@@ -1,0 +1,91 @@
+units         lj
+atom_style    full
+dimension     3
+
+
+neighbor 0.8 bin
+
+read_data packed_PPS.data
+
+change_box all boundary p p f 
+
+include settings.lmp
+
+
+####################################
+#### SQUEEZE BULK TO FILM
+####################################
+minimize    0.0 1.0e-8 1000 100000 
+
+write_data lmp_data/relaxed.data
+write_restart lmp_bin/relaxed.bin
+
+#fix z walls moving with the box 
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+
+#squeeze the box to thin film
+fix shrink1 all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} z final -${thick1} ${thick1}
+
+dump mydumpSqeeze1 all custom 5000 lmp_trj/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze1 sort id 
+
+reset_timestep 0
+run ${runtime}
+
+write_data lmp_data/firstSqueeze.data
+undump mydumpSqeeze1
+
+#turn on LJ attraction and squeeze more
+pair_coeff    * * 1.0 1.0 2.5 10.0
+unfix shrink1
+fix shrink2 all deform 1 z final -${thickFinal} ${thickFinal}
+
+dump mydumpSqeeze2 all custom 5000 lmp_trj/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze2 sort id 
+
+reset_timestep 0
+run ${runtime}
+
+write_data lmp_data/startEqui.data
+write_restart lmp_bin/startEqui.bin
+undump mydumpSqeeze2
+unfix nvt1
+unfix shrink2
+
+####################################
+#### EQUILIBRATION
+####################################
+fix stabilize all momentum 1 linear 1 1 1
+reset_timestep 0
+
+fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
+run ${runtime}
+unfix npt1
+write_restart lmp_bin/PressAnn1.bin
+
+fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
+run ${runtime}
+unfix npt2
+write_restart lmp_bin/PressAnn2.bin
+
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
+run ${runtimeShort}
+write_restart lmp_bin/PressEq.bin
+
+reset_timestep 0
+unfix walls
+change_box all boundary p p s
+
+restart 100000 lmp_bin/Conf_*.bin
+
+dump mydumpEqui all custom 5000 lmp_trj/Conf_*.dat id type xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run ${runtime}
+
+write_data lmp_data/startProduction.data
+write_restart lmp_bin/startProduction.bin
+
