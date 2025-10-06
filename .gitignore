@@ -9,6 +9,9 @@ start/
 *.trj
 *.lammps*
 *.mol
+slurm-*.out
 
 # exclude lists for syncing
 exclude-list
+
+*.sh
