@@ -4,7 +4,7 @@ dimension     3
 
 
 neighbor 0.8 bin
-
+neigh_modify one 1000 every 1
 read_data packed_PPS.data
 
 change_box all boundary p p f 
@@ -21,6 +21,8 @@ write_data lmp_data/relaxed.data
 write_restart lmp_bin/relaxed.bin
 
 #fix z walls moving with the box 
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
 variable wallL equal ramp(zlo,zlo)
 variable wallH equal ramp(zhi,zhi)
 fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
