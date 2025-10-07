@@ -1,6 +1,6 @@
 read_restart lmp_bin/PressEq.bin 
 
-include settings.lmp_bin
+include settings.lmp
 
 dielectric 1.0
 pair_coeff    * * 1.0 1.0 2.5 10.0
