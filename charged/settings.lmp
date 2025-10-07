@@ -3,6 +3,9 @@
 ### A COMPLEX COACERVATE
 ###################################
 
+neighbor 0.8 bin
+neigh_modify one 8000 every 1
+
 ###################################
 ####  GROUPS
 ####################################
@@ -24,7 +27,6 @@ special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate pa
 dielectric 10.0 # weak coloumbic interaction to avoid like charges being close
 
 pair_style lj/cut/coul/cut 1.12246 10.0
-pair_coeff * * 1.0 1.0 1.12246 10.0
 
 set group pos_chains charge 1.0 
 set group neg_chains charge -1.0
@@ -39,8 +41,12 @@ variable PressEq equal 0.0
 variable dt equal 0.005
 variable Tdamping equal 10*${dt}
 variable Pdamping equal 100*${dt}
+
+# runtimes 
 variable runtime equal 100000
 variable runtimeShort equal 50000
+variable runtimeSqueeze1 equal 20000
+variable runtimeSqueeze2 equal 10000 
 
 # final thickness calculation      
 #TODO make Lbox, target_density, and tot_chainVol inputted 
@@ -64,7 +70,7 @@ compute	stressA all stress/atom NULL
 compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 variable	pz equal -(c_p[3])/(vol)
 variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
-thermo_style	custom step temp time ebond epair ke etotal enthalpy vol density press v_pxy v_pz spcpu cpuremain 
+thermo_style	custom step temp time ebond epair ecoul evdwl ke etotal enthalpy vol density press v_pxy v_pz spcpu cpuremain 
 thermo_modify line yaml format none
 
 ####################################

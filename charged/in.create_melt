@@ -3,8 +3,6 @@ atom_style    full
 dimension     3
 
 
-neighbor 0.8 bin
-neigh_modify one 1000 every 1
 read_data packed_PPS.data
 
 change_box all boundary p p f 
