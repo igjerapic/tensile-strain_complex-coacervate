@@ -3,7 +3,7 @@ atom_style    full
 dimension     3
 
 
-read_data packed_PPS.data
+read_data packed_PPP.data
 
 change_box all boundary p p f 
 
