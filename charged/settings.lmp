@@ -24,8 +24,6 @@ bond_coeff    1 30.0 1.5 1.0 1.0  # taken from doi:10.1021/acsmacrolett.5c00323
 bond_coeff    2 0.0 1.5 1.0 1.0 
 special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
 
-dielectric 10.0 # weak coloumbic interaction to avoid like charges being close
-
 pair_style lj/cut/coul/cut 1.12246 10.0
 
 set group pos_chains charge 1.0 
@@ -39,14 +37,14 @@ variable Temp2 equal 1.0
 variable PressAnn equal 10.0
 variable PressEq equal 0.0
 variable dt equal 0.005
-variable Tdamping equal 10*${dt}
-variable Pdamping equal 100*${dt}
+variable Tdamping equal 100*${dt}
+variable Pdamping equal 1000*${dt}
 
 # runtimes 
-variable runtime equal 100000
-variable runtimeShort equal 50000
-variable runtimeSqueeze1 equal 20000
-variable runtimeSqueeze2 equal 10000 
+# variable runtime equal 100000
+# variable runtimeShort equal 50000
+variable runtime equal 20000
+variable runtimeShort equal 10000
 
 # final thickness calculation      
 #TODO make Lbox, target_density, and tot_chainVol inputted 

@@ -1,0 +1,25 @@
+read_restart lmp_bin/PressEq.bin 
+
+include settings.lmp_bin
+
+dielectric 1.0
+pair_coeff    * * 1.0 1.0 2.5 10.0
+
+####################################
+#### LONG NPT EQUILIBRATION
+####################################
+fix stabilize all momentum 1 linear 1 1 1
+
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
+reset_timestep 0
+
+change_box all boundary p p s 
+restart 10000 lmp_bin/ConfPPS_*.bin
+
+dump mydumpEqui all custom 1000 lmp_trj/ConfPPS_*.dat id type mol xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run ${runtime} upto
+
+write_data lmp_data/startProduction_PPS.data
+write_restart lmp_bin/startProduction_PPS.bin

@@ -1,0 +1,27 @@
+read_restart lmp_bin/firstSqueeze.bin
+
+include settings.lmp
+
+pair_coeff    * * 1.0 1.0 2.5 10.0
+dielectric 10.0 
+
+####################################
+#### ATTRACTIVE SQUEEZE  
+####################################
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+
+fix shrink2 all deform 1 z final -${thickFinal} ${thickFinal}
+
+dump mydumpSqeeze2 all custom 100 lmp_trj/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze2 sort id 
+
+reset_timestep 0
+run ${runtimeShort}
+
+write_data lmp_data/startCharging.data
+write_restart lmp_bin/startCharging.bin

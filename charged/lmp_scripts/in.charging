@@ -1,0 +1,47 @@
+read_restart lmp_bin/startCharging.bin 
+
+include settings.lmp 
+
+pair_coeff    * * 1.0 1.0 2.5 10.0
+dielectric 10.0 
+
+####################################
+#### START CHARGING
+####################################
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+#fix z walls moving with the box 
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+
+# output data 
+dump mydumpCharging all custom 200 lmp_trj/Charging.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpCharging sort id 
+
+####################################
+#### RAMP UP THE INTERACTIONS IN LOOP
+####################################
+variable chargingSteps equal 2000
+variable diel equal 10.0 
+variable final_diel equal 1.0 
+reset_timestep 0 
+label chargingLoop
+if "${diel}==${final_diel}" then "jump SELF break"
+
+label continue
+variable diel equal ${diel}-1.0
+dielectric ${diel}
+run ${chargingSteps}
+jump SELF chargingLoop
+
+label break
+
+write_data lmp_data/fullyCharged.data
+write_restart lmp_bin/fullyCharged.bin
+
+run 2000 
+write_data lmp_data/startEqui.data
+write_restart lmp_bin/startEqui.bin
+
