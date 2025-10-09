@@ -3,7 +3,6 @@ lmp_data/
 lmp_bin/
 start/
 *.bin
-
 *.dat 
 *.data 
 *.trj
@@ -11,9 +10,14 @@ start/
 *.loglmp
 *.outlmp
 *.mol
+
+# submission scripts and outputs
+submit*.sh
 slurm-*.out
 
 # exclude lists for syncing
 exclude-list
 
-*.sh
+# general helper functions
+plot_equil.py
+
