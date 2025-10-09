@@ -1,33 +1,16 @@
-units         lj
-atom_style    full
-dimension     3
-
-read_data start/startProduction_PPF.data
-change_box all boundary p p sf 
+read_restart start/startProduction_PPF.bin
 
 include settings.lmp
 
+change_box all boundary p p f 
+
+
 dielectric 1.0
+variable epsilon_subs equal 2.0 
 
-pair_coeff    * * 1.0 1.0 2.5 10.0
+pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
+pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
 pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
-
-####################################
-#### RUN NVT BEFORE ADDING SUBSTRATES
-####################################
-# variable wall_rc equal 2.5
-# fix walls all wall/lj93 zlo EDGE 1.0 1.0 ${wrcut} zhi EDGE 1.0 1.0 ${wrcut}
-# fix_modify walls energy yes
-# 
-# minimize 1.0e-6 1.0e-6 1000000 1000000
-# 
-# fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
-# reset_timestep 0
-# run 100000
-# 
-# write_data lmp_data/endMinimize.data
-# unfix nvt1 
-# unfix walls
 
 ####################################
 #### ADD SUBSTRATES
@@ -36,23 +19,31 @@ variable sigmaSub equal 0.8
 variable spacing equal 2^(1/6)*${sigmaSub}
 variable diametro equal ${spacing}/sqrt(2)
 variable rhostar equal sqrt(2)*(${diametro}^(-3.0))
-lattice         fcc ${rhostar} origin 0.0 0.0 0.22296544
+lattice         fcc ${rhostar} origin 0.0 0.0 0.0 # 0.22296544
 
 
+variable zloNow equal zlo 
+variable zhiNow equal zhi
+
+# variable topSubstrate equal ${zhiNow}/${spacing}-0.1
+# variable bottomSubstrate equal ${zloNow}/${spacing}+0.1
 variable topSubstrate equal zhi/${spacing}-0.1
 variable bottomSubstrate equal zlo/${spacing}+0.1
-variable elongment equal 0.3
-change_box all z delta -${elongment} ${elongment} units box
+variable elongment equal 1.0
 
+change_box all z delta -${elongment} ${elongment} units box
 write_data lmp_data/endChangeBox.data
 
-region topsubstrate plane 0 0 ${topSubstrate} 0 0 -1 
-region bottomsubstrate plane 0 0 ${bottomsubstrate} 0 0 1 
+region topsubstrate plane 0 0 ${topSubstrate} 0 0 1 
+create_atoms 3 region topsubstrate
+region bottomsubstrate plane 0 0 ${bottomSubstrate} 0 0 -1 
+create_atoms 3 region bottomsubstrate
+region substrate union 2 topsubstrate bottomsubstrate
+# create_atoms 3 region substrate
 
-create_atoms 3 region ${topsubstrate}
-create_atoms 3 region ${bottomsubstrate}
 group subs type 3
 
 change_box all z delta -1 1 
+# print "after last change zdims: (${zloNow}, ${zhiNow})"
 write_data lmp_data/Substrates.data
 
