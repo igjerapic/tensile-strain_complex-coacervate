@@ -8,6 +8,8 @@ start/
 *.data 
 *.trj
 *.lammps*
+*.loglmp
+*.outlmp
 *.mol
 slurm-*.out
 

@@ -10,6 +10,7 @@ change_box all boundary p p f
 include settings.lmp
 
 
+velocity all create ${Temp} ${velSeed}
 ####################################
 #### SQUEEZE BULK TO FILM
 ####################################
