@@ -10,7 +10,7 @@ include settings.lmp
 ####################################
 #### REPULSIVE SQUEEZE  
 ####################################
-pair_coeff * * 1.0 1.0 1.12246 10.0
+pair_coeff * * 1.0 1.0 1.12246
 dielectric 10.0 
 
 velocity all create ${Temp} ${velSeed}

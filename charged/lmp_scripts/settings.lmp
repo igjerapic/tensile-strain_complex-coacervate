@@ -24,7 +24,10 @@ bond_coeff    1 30.0 1.5 1.0 1.0  # taken from doi:10.1021/acsmacrolett.5c00323
 bond_coeff    2 0.0 1.5 1.0 1.0 
 special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
 
-pair_style lj/cut/coul/cut 1.12246 10.0
+
+pair_style lj/cut/coul/long 1.12246 10.0
+kspace_style pppm 1.0e-6
+kspace_modify slab 3.0 
 
 set group pos_chains charge 1.0 
 set group neg_chains charge -1.0

@@ -7,20 +7,10 @@ change_box all boundary p p f
 dielectric 1.0
 variable epsilon_subs equal 3.0 
 
-pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
-pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
-pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
-
-# # changing to coul/long interaction 
-# pair_style lj/cut/coul/long 2.5 10.0
-# 
-# kspace_style pppm 1.0e-6
-# kspace_modify slab 3.0 
-# 
-# pair_coeff    * * 1.0 1.0 2.5 
-# pair_coeff    1*2 1*2 1.0 1.0 2.5 
-# pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 
-# pair_coeff    3 3 0.0 1.0 2.5  # substrate self-interaction
+pair_coeff    * * 1.0 1.0 2.5 
+pair_coeff    1*2 1*2 1.0 1.0 2.5 
+pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 
+pair_coeff    3 3 0.0 1.0 2.5  # substrate self-interaction
 
 ####################################
 #### ADD SUBSTRATES
