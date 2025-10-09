@@ -23,7 +23,7 @@ restart 10000 lmp_bin/ConfPPF_*.bin
 dump mydumpEqui all custom 1000 lmp_trj/ConfPPF_*.dat id type mol xu yu zu vx vy vz
 dump_modify mydumpEqui sort id
 
-run ${runtime} upto
+run 40000 upto
 
 write_data lmp_data/startProduction_PPF.data
 write_restart lmp_bin/startProduction_PPF.bin
