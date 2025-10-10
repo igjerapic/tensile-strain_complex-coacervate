@@ -68,5 +68,5 @@ dump_modify mydumpSubs sort id
 run ${runtime} 
 
 write_data lmp_data/Substrates.data
-# write_restart lmp_bin/substrates.bin
+write_restart lmp_bin/substrates.bin
 
