@@ -1,0 +1,55 @@
+
+read_restart lmp_bin/startProduction_PPF.bin
+
+include settings.lmp
+
+change_box all boundary p p f 
+
+dielectric 1.0
+variable epsilon_subs equal 3.0 
+
+pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
+pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
+pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
+
+####################################
+#### ADD BOTTOM SUBSTRATE
+####################################
+# lattice parameters for substrate 
+variable sigmaSub equal 0.8
+variable spacing equal 2^(1/6)*${sigmaSub}
+variable diametro equal ${spacing}/sqrt(2)
+variable rhostar equal sqrt(2)*(${diametro}^(-3.0))
+lattice         fcc ${rhostar} origin 0.0 0.0 0.0 # 0.22296544
+
+# make space for substrate layers 
+variable zloNow equal zlo 
+variable zloOG equal ${zloNow} 
+
+variable elongment equal 0.5 # was determined by testing 
+change_box all z delta -${elongment} 0.0 units box 
+ 
+# location of substrates 
+variable Substrate equal ${zloOG}/${spacing}
+
+# create substrates 
+region substrate plane 0 0 ${bottomSubstrate} 0 0 -1 
+create_atoms 3 region substrate
+
+group subs type 3 
+
+change_box all z delta -1 0.0 
+
+# # run under nvt with "fixed" substrate atoms
+# fix tether subs spring/self 100.0
+# fix_modify tether energy yes
+# fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
+# 
+# reset_timestep 0 
+# dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
+# dump_modify mydumpSubs sort id
+# run ${runtime} 
+
+write_data lmp_data/Substrate.data
+write_restart lmp_bin/substrate.bin
+
