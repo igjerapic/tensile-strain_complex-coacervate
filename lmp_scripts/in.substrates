@@ -58,14 +58,14 @@ group bot_sub region bottomsubstrate
 change_box all z delta -1 1 
 
 # run under nvt with "fixed" substrate atoms
-# fix tether subs spring/self 100.0
-# fix_modify tether energy yes
-# fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
+fix tether subs spring/self 100.0
+fix_modify tether energy yes
+fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
 
-# reset_timestep 0 
-# dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
-# dump_modify mydumpSubs sort id
-# run ${runtime} 
+reset_timestep 0 
+dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
+dump_modify mydumpSubs sort id
+run ${runtime} 
 
 write_data lmp_data/Substrates.data
 # write_restart lmp_bin/substrates.bin
