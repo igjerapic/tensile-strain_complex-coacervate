@@ -33,7 +33,7 @@ change_box all z delta -${elongment} 0.0 units box
 variable Substrate equal ${zloOG}/${spacing}
 
 # create substrates 
-region substrate plane 0 0 ${bottomSubstrate} 0 0 -1 
+region substrate plane 0 0 ${Substrate} 0 0 -1 
 create_atoms 3 region substrate
 
 group subs type 3 
