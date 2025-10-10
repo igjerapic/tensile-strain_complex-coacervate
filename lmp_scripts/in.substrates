@@ -33,12 +33,21 @@ variable rhostar equal sqrt(2)*(${diametro}^(-3.0))
 lattice         fcc ${rhostar} origin 0.0 0.0 0.0 # 0.22296544
 
 # make space for substrate layers
-variable elongment equal 1.0 # was determined by testing
+variable zhiNow equal zhi
+variable zloNow equal zlo
+variable zhiOG equal ${zhiNow}
+variable zloOG equal ${zloNow}
+
+print "zdimsNow: (${zloOG}, ${zhiOG}), zdimsThermo: (${zloNow}, ${zhiNow})"
+variable elongment equal 0.5 # was determined by testing
 change_box all z delta -${elongment} ${elongment} units box
+print "zdimsNow: (${zloOG}, ${zhiOG}), zdimsThermo: (${zloNow}, ${zhiNow})"
 
 # location of substrates
-variable topSubstrate equal zhi/${spacing}-0.1
-variable bottomSubstrate equal zlo/${spacing}+0.1
+variable topSubstrate equal ${zhiOG}/${spacing}#+0.1
+variable bottomSubstrate equal ${zloOG}/${spacing}#-0.1
+# variable topSubstrate equal ${zhiOG}+1.00001
+# variable bottomSubstrate equal ${zloOG}-1.00001
 
 # create substrates 
 region topsubstrate plane 0 0 ${topSubstrate} 0 0 1 
@@ -53,15 +62,15 @@ group bot_sub region bottomsubstrate
 change_box all z delta -1 1 
 
 # run under nvt with "fixed" substrate atoms
-fix tether subs spring/self 100.0
-fix_modify tether energy yes
-fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
+# fix tether subs spring/self 100.0
+# fix_modify tether energy yes
+# fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
 
-reset_timestep 0 
-dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
-dump_modify mydumpSubs sort id
-run ${runtime} 
+# reset_timestep 0 
+# dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
+# dump_modify mydumpSubs sort id
+# run ${runtime} 
 
 write_data lmp_data/Substrates.data
-write_restart lmp_bin/substrates.bin
+# write_restart lmp_bin/substrates.bin
 
