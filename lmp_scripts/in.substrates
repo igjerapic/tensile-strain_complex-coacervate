@@ -65,7 +65,7 @@ fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
 reset_timestep 0 
 dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
 dump_modify mydumpSubs sort id
-run ${runtime} 
+run 40000 upto 
 
 write_data lmp_data/Substrates.data
 write_restart lmp_bin/substrates.bin
