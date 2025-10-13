@@ -11,17 +11,6 @@ pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
 pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
 pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
 
-# # changing to coul/long interaction 
-# pair_style lj/cut/coul/long 2.5 10.0
-# 
-# kspace_style pppm 1.0e-6
-# kspace_modify slab 3.0 
-# 
-# pair_coeff    * * 1.0 1.0 2.5 
-# pair_coeff    1*2 1*2 1.0 1.0 2.5 
-# pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 
-# pair_coeff    3 3 0.0 1.0 2.5  # substrate self-interaction
-
 ####################################
 #### ADD SUBSTRATES
 ####################################
@@ -39,7 +28,8 @@ variable zhiOG equal ${zhiNow}
 variable zloOG equal ${zloNow}
 
 variable elongment equal 0.5 # was determined by testing
-change_box all z delta -${elongment} 10 units box
+variable elongmentTop equal 10.0
+change_box all z delta -${elongment} ${elongmentTop} units box
 
 # location of substrates
 variable topSubstrate equal zhi/${spacing}-0.1
