@@ -1,4 +1,5 @@
 # data files from simulation
+workspace
 lmp_data/
 lmp_bin/
 start/
@@ -20,4 +21,8 @@ exclude-list
 
 # general helper functions
 plot_equil.py
+get_jobID.sh
 
+
+# temperary files
+tmp

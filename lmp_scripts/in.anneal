@@ -10,16 +10,20 @@ pair_coeff    * * 1.0 1.0 2.5 10.0
 ####################################
 fix stabilize all momentum 1 linear 1 1 1
 
+#fix z walls moving with the box 
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix_modify walls energy yes
+
 fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
 reset_timestep 0
+restart 10000 lmp_bin/ConfAnneal_*.bin
 
-change_box all boundary p p s 
-restart 10000 lmp_bin/ConfPPS_*.bin
-
-dump mydumpEqui all custom 1000 lmp_trj/ConfPPS_*.dat id type mol xu yu zu vx vy vz
+dump mydumpEqui all custom 1000 lmp_trj/ConfAnneal_*.dat id type mol xu yu zu vx vy vz
 dump_modify mydumpEqui sort id
 
-run ${runtime} upto
+run 40000 upto
 
-write_data lmp_data/startProduction_PPS.data
-write_restart lmp_bin/startProduction_PPS.bin
+write_data lmp_data/endAnneal.data
+write_restart lmp_bin/endAnneal.bin
