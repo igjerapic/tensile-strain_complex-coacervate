@@ -1,4 +1,4 @@
-read_restart lmp_bin/endAnneal.bin
+read_restart lmp_bin/SlabEq.bin
 
 include settings.lmp
 
@@ -68,5 +68,5 @@ dump_modify mydumpSubs sort id
 run 40000 upto 
 
 write_data lmp_data/Substrates.data
-write_restart lmp_bin/substrates.bin
+write_restart lmp_bin/Substrates.bin
 

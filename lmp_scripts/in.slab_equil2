@@ -25,5 +25,5 @@ dump_modify mydumpEqui sort id
 
 run 40000 upto
 
-write_data lmp_data/endAnneal.data
-write_restart lmp_bin/endAnneal.bin
+write_data lmp_data/SlabEq.data
+write_restart lmp_bin/SlabEq.bin
