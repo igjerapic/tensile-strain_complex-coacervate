@@ -1,4 +1,4 @@
-read_restart lmp_bin/startProduction_PPF.bin
+read_restart lmp_bin/endAnneal.bin
 
 include settings.lmp
 
