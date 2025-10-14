@@ -32,17 +32,14 @@ velocity chains create ${Temp} ${velSeed}
 fix stabilize all momentum 1 linear 1 1 1
 fix nvt1 mobile nvt temp ${Temp} ${Temp} ${Tdamping}
 
-# find top of complex coacervate and bottom of top substrate
-compute polyMaxZ chains reduce max z 
-compute topSubMaxZ top_sub reduce min z 
-run 0 
-variable slabTop equal c_polyMaxZ
-variable topSubZ equal c_topSubMaxZ
+# determine density of coacervate slab
+variable n_polymer_beads equal count(chains)
+variable x_bounds equal bound(chains,x)
+variable y_bounds equal bound(chains,y)
+variable z_bounds equal bound(chains,z)
 
-variable finalZ equal ${slabTop}
-# maximum number of steps to take 
-variable totolDist equal abs(${topSubZ}-${finalZ})
-variable max_steps1 equal (${totalDist}+2.0)/(${rate}*${dt})
+variable slabVol equal abs(v_xbounds[2]-v_xbounds[1])*abs(v_ybounds[2]-v_ybounds[1])*abs(v_zbounds[2]-v_zbounds[1])
+variable slabDensity equal ${n_polymer_beads}/v_slabVol
 ####################################
 #### MOVE TOP SUBSTRATE TOWARDS MELT
 ####################################
@@ -51,13 +48,13 @@ fix tether subs spring/self 100.0
 fix_modify tether energy yes
 
 fix topcompress top_sub move linear NULL NULL -${rate}  
-fix checkPress all halt 100 v_topSubZ == ${finalZ} error soft
+fix checkPress all halt 100 v_slabDensity < 0.8 error soft
 
 dump dumpCompress all custom 100 lmp_trj/Compress.dat id type mol xu yu zu c_potEng c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
 dump_modify dumpCompress sort id
 
 reset_timestep 0 
-run ${max_steps1} upto 
+run ${max_steps2} upto 
 unfix topcompress 
 unfix checkPress
 undump dumpCompress
