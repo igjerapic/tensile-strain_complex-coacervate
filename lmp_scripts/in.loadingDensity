@@ -34,11 +34,14 @@ fix nvt1 mobile nvt temp ${Temp} ${Temp} ${Tdamping}
 
 # determine density of coacervate slab
 variable n_polymer_beads equal count(chains)
-variable x_bounds equal bound(chains,x)
-variable y_bounds equal bound(chains,y)
-variable z_bounds equal bound(chains,z)
+variable xmin equal bound(chains,xmin)
+variable xmax equal bound(chains,xmax)
+variable ymin equal bound(chains,ymin)
+variable ymax equal bound(chains,ymax)
+variable zmin equal bound(chains,zmin)
+variable zmax equal bound(chains,zmax)
 
-variable slabVol equal abs(v_xbounds[2]-v_xbounds[1])*abs(v_ybounds[2]-v_ybounds[1])*abs(v_zbounds[2]-v_zbounds[1])
+variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
 variable slabDensity equal ${n_polymer_beads}/v_slabVol
 ####################################
 #### MOVE TOP SUBSTRATE TOWARDS MELT
@@ -48,7 +51,7 @@ fix tether subs spring/self 100.0
 fix_modify tether energy yes
 
 fix topcompress top_sub move linear NULL NULL -${rate}  
-fix checkPress all halt 100 v_slabDensity < 0.8 error soft
+fix checkPress all halt 100 v_slabDensity > 0.85 error soft
 
 dump dumpCompress all custom 100 lmp_trj/Compress.dat id type mol xu yu zu c_potEng c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
 dump_modify dumpCompress sort id
