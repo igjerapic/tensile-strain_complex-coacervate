@@ -5,7 +5,7 @@ dimension     3
 read_data packed_PPP.data
 change_box all boundary p p f 
 
-include settings.lmp
+include ${SETTINGS_FILE}
 
 ####################################
 #### REPULSIVE SQUEEZE  
@@ -34,7 +34,7 @@ dump mydumpSqeeze1 all custom 200 lmp_trj/Squeez1.dat id type mol xu yu zu vx vy
 dump_modify mydumpSqeeze1 sort id 
 
 reset_timestep 0
-run ${runtime}
+run ${runtimeShort}
 
 write_data lmp_data/firstSqueeze.data
 write_restart lmp_bin/firstSqueeze.bin

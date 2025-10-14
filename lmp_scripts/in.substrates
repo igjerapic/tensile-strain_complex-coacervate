@@ -1,6 +1,6 @@
 read_restart lmp_bin/SlabEq.bin
 
-include settings.lmp
+include ${SETTINGS_FILE}
 
 change_box all boundary p p f 
 
@@ -52,10 +52,11 @@ fix tether subs spring/self 100.0
 fix_modify tether energy yes
 fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
 
+thermo 500
 reset_timestep 0 
-dump mydumpSubs all custom 200 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
+dump mydumpSubs all custom 1000 lmp_trj/Substrates.dat id type mol xu yu zu vx vy vz
 dump_modify mydumpSubs sort id
-run 40000 upto 
+run 100000 upto 
 
 write_data lmp_data/Substrates.data
 write_restart lmp_bin/Substrates.bin

@@ -1,6 +1,6 @@
 read_restart lmp_bin/startCharging.bin 
 
-include settings.lmp 
+include ${SETTINGS_FILE}
 
 pair_coeff    * * 1.0 1.0 2.5 10.0
 dielectric 10.0 

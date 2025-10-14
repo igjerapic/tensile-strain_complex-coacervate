@@ -4,8 +4,8 @@
 
 # variables to be inputted later when script is implemented 
 variable packing_density equal 0.3
-variable num_chains equal 256 
-variable chain_length equal 32
+# variable num_chains equal 256 
+# variable chain_length equal 32
 
 # chain properties 
 variable sigma equal 1.0
