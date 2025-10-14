@@ -39,7 +39,7 @@ fix nvt1 mobile nvt temp ${Temp} ${Temp} ${Tdamping}
 fix tether subs spring/self 100.0
 fix_modify tether energy yes
 
-fix topcompress top_sub move linear NULL -${rate} NULL 
+fix topcompress top_sub move linear NULL NULL -${rate}  
 fix checkPress all halt 100 v_pz > 0.2 error soft
 
 dump dumpCompress all custom 100 lmp_trj/Compress.dat id type mol xu yu zu c_potEng c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
