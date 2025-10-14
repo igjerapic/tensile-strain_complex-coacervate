@@ -12,7 +12,7 @@ neigh_modify one 8000 every 1
 
 group  pos_chains  type 1
 group  neg_chains  type 2
-group  chains        type 1 2
+group  chains      type 1 2
 group  subs        type 3
 
 ####################################
@@ -24,11 +24,6 @@ bond_coeff    1 30.0 1.5 1.0 1.0  # taken from doi:10.1021/acsmacrolett.5c00323
 bond_coeff    2 0.0 1.5 1.0 1.0 #TODO make box for only one bond?  
 
 special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
-
-# change pair_style to PPPM
-pair_style lj/cut/coul/long 2.5 10.0 # full LJ as dealing with compression and the pulling
-kspace_style pppm 1.0e-6
-kspace_modify slab 3.0 
 
 dielectric 1.0
 variable epsilon_subs equal 3.0 
@@ -52,15 +47,23 @@ variable Temp equal 1.0
 variable dt equal 0.005
 variable Tdamping equal 100*${dt}
 
-# adhesion settings 
-variable init_dist equal 10.0 
-variable final_dist equal 32.0 
-variable rate equal 0.2
+# determine density of coacervate slab
+variable mass_chains equal mass(chains)
+variable xmin equal bound(chains,xmin)
+variable xmax equal bound(chains,xmax)
+variable ymin equal bound(chains,ymin)
+variable ymax equal bound(chains,ymax)
+variable zmin equal bound(chains,zmin)
+variable zmax equal bound(chains,zmax)
 
-variable check_distance equal 0.5
-variable check_step equal round(${check_distance}/(${rate}*{dt}))
-variable max_steps1 equal (${init_dist}+2.0)/(${rate}*${dt})
-variable max_steps2 equal ${final_dist}/(${rate}*${dt})
+variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
+variable slabDensity equal ${mass_chains}/v_slabVol
+
+# adhesion procedure settings 
+variable rate equal 0.2
+variable compress_density equal 0.85
+variable final_dist equal 32.0 
+variable max_steps equal ${final_dist}/(${rate}*${dt})
 
 variable velSeed equal 934851
 variable thermoT equal 100
@@ -74,12 +77,16 @@ compute	stressA all stress/atom NULL
 compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 compute potEng all pe/atom 
 compute voronoi chains voronoi/atom 
+compute p_slab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 
 variable	pz equal -(c_p[3])/(vol)
 variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
 
+variable	pz_slab equal -(c_p_slab[3])/(v_slabVol)
+variable	pxy_slab equal -(c_p_slab[1]+c_p_slab[2])/(2*slabVol)
 
-thermo_style	custom step time temp ke etotal ebond epair ecoul evdwl enthalpy press v_pxy v_pz spcpu cpuremain 
+
+thermo_style	custom step time temp ke etotal ebond epair ecoul evdwl enthalpy press v_pxy v_pz v_slabDensity v_p_slab v_pz_slab v_pxy_slab spcpu cpuremain 
 thermo_modify line yaml format none
 ####################################
 #### INTEGRATION

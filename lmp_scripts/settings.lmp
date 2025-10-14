@@ -40,9 +40,19 @@ variable dt equal 0.005
 variable Tdamping equal 100*${dt}
 variable Pdamping equal 1000*${dt}
 
+# determine density of coacervate slab
+variable mass_chains equal mass(chains)
+variable xmin equal bound(chains,xmin)
+variable xmax equal bound(chains,xmax)
+variable ymin equal bound(chains,ymin)
+variable ymax equal bound(chains,ymax)
+variable zmin equal bound(chains,zmin)
+variable zmax equal bound(chains,zmax)
+
+variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
+variable slabDensity equal ${mass_chains}/v_slabVol
+
 # runtimes 
-# variable runtime equal 100000
-# variable runtimeShort equal 50000
 variable runtime equal 20000
 variable runtimeShort equal 10000
 
@@ -66,9 +76,12 @@ thermo  ${thermoT}
 
 compute	stressA all stress/atom NULL
 compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+compute p_slab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 variable	pz equal -(c_p[3])/(vol)
 variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
-thermo_style	custom step temp time ebond epair ecoul evdwl ke etotal enthalpy vol density press v_pxy v_pz spcpu cpuremain 
+variable	pz_slab equal -(c_p_slab[3])/(v_slabVol)
+variable	pxy_slab equal -(c_p_slab[1]+c_p_slab[2])/(2*slabVol)
+thermo_style	custom step temp time ebond epair ecoul evdwl ke etotal enthalpy vol v_slabVol density v_slabDensity press v_p_slab v_pxy v_pxy_slab v_pz v_pz_slab spcpu cpuremain 
 thermo_modify line yaml format none
 
 ####################################
