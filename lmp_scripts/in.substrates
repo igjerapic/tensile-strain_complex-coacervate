@@ -27,7 +27,8 @@ variable zloNow equal zlo
 variable zhiOG equal ${zhiNow}
 variable zloOG equal ${zloNow}
 
-variable elongment equal 0.5 # was determined by testing
+# elongment values were determined by iterative testing for slab thickness of 16
+variable elongment equal 0.5 
 variable elongmentTop equal 10.0
 change_box all z delta -${elongment} ${elongmentTop} units box
 

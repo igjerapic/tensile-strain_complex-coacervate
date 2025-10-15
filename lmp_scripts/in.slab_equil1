@@ -29,5 +29,5 @@ unfix npt2
 write_restart lmp_bin/PressAnn2.bin
 
 fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
-run ${runtimeShort}
+run ${runtime}
 write_restart lmp_bin/PressEq.bin
