@@ -45,7 +45,7 @@ group top_sub region topsubstrate
 group bot_sub region bottomsubstrate
 group mobile subtract all top_sub 
 
-change_box all z delta -1 2
+change_box all z delta -5 5
 
 ####################################
 #### EQUILIBRATE CONFINED SYSTEM
@@ -57,7 +57,7 @@ fix_modify tether energy yes
 fix nvt1 mobile nvt temp ${Temp2} ${Temp2} ${Tdamping}
 fix topRigid top_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping}
 
-dump mydumpSubs all custom 500 lmp_trj/equilSubstrates.dat id type mol xu yu zu vx vy vzc_stressA[1] c_stressA[2] c_stressA[3]
+dump mydumpSubs all custom 500 lmp_trj/equilSubstrates.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs sort id
 
 restart 500 lmp_bin/restartSubs1.bin lmp_bin/restartSubs2.bin
