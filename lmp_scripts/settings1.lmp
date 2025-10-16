@@ -6,14 +6,6 @@
 neighbor 0.8 bin
 neigh_modify one 8000 every 1
 
-###################################
-####  GROUPS
-####################################
-
-group  pos_chains  type 1
-group  neg_chains  type 2
-group  chains      type 1 2
-group  subs        type 3
 
 ####################################
 ####  POTENTIALS  
@@ -26,7 +18,7 @@ bond_coeff    2 0.0 1.5 1.0 1.0 #TODO make box for only one bond?
 special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
 
 dielectric 1.0
-variable epsilon_subs equal 3.0 
+variable epsilon_subs equal ${epsilon_PS}
 
 pair_style lj/cut/coul/long 2.5 10.0  
 kspace_style pppm 1.0e-6
@@ -36,6 +28,15 @@ pair_coeff    * * 1.0 1.0 2.5
 pair_coeff    1*2 1*2 1.0 1.0 2.5 
 pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 
 pair_coeff    3 3 0.0 1.0 2.5  # substrate self-interaction
+
+###################################
+####  GROUPS
+####################################
+
+group  pos_chains  type 1
+group  neg_chains  type 2
+group  chains      type 1 2
+group  subs        type 3
 
 set group pos_chains charge 1.0 
 set group neg_chains charge -1.0
@@ -55,18 +56,31 @@ variable ymin equal bound(chains,ymin)
 variable ymax equal bound(chains,ymax)
 variable zmin equal bound(chains,zmin)
 variable zmax equal bound(chains,zmax)
+variable z0 equal abs(${zmax}-${zmin})
+variable zHalf equal ${z0}/2.0
 
 variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
 variable slabDensity equal ${mass_chains}/v_slabVol
 
 # adhesion procedure settings 
-variable rate equal 0.2
-variable compress_density equal 0.85
-variable final_dist equal 32.0 
-variable max_steps equal ${final_dist}/(${rate}*${dt})
-
+variable rate equal ${RATE}
+variable final_strain equal 2.0 
+variable delta_z equal ${final_strain}*${z0}
+variable runtime equal (${final_strain}-1)/(${rate}*${dt})
 variable velSeed equal 934851
 variable thermoT equal 100
+
+###################################
+####  ADDITIONAL GROUPS
+####################################
+region topBox plane 0 0 ${zHalf} 0 0 1
+region botBox plane 0 0 ${zHalf} 0 0 -1
+group topAtoms region topBox
+group botAtoms region botBox
+
+group top_sub subtract topAtoms chains
+group bot_sub subtract botAtoms chains
+group mobile subtract all top_sub
 
 ####################################
 #### THERMO-STYLE

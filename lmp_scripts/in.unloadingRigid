@@ -1,0 +1,54 @@
+units lj 
+atom_style    full
+dimension     3
+
+pair_style lj/cut/coul/long 2.5 10.0 
+bond_style fene 
+
+read_data lmp_data/equilSubstrates.data
+# read_restart lmp_bin/equilSubstrates.bin
+change_box all boundary p p f
+
+include ${SETTINGS_FILE}
+
+####################################
+#### INCREASE BOX SIZE FOR ELONGATION
+####################################
+change_box all z delta 0.0 ${delta_z}
+
+fix stabilize all momentum 1 linear 1 1 1
+fix nvt1 mobile nvt temp ${Temp} ${Temp} ${Tdamping}
+
+
+####################################
+#### VARIABLES AND FIXES FOR STRESS COMPUTATION
+####################################
+compute stressAll_Z chains reduce sum c_stressA[3]
+variable strain equal step*${rate}*{dt}
+
+fix stressCurve all print 1 "v_strain c_stressAll_Z v_volSlab" file stressCurve.dat screen no
+
+####################################
+#### ELONGATION
+####################################
+
+fix tether bot_sub spring/self 100.0
+fix_modify tether energy yes
+fix unloading top_sub move linear 0.0 0.0 ${rate}  
+
+#
+dump dumpUnloading all custom 100 lmp_trj/UnloadingRigid.dat id type mol xu yu zu vx vy vz c_potEng c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
+dump_modify dumpUnloading sort id
+
+# update boxes for pppm calculation
+balance       0.9 shift z 20 1.0
+fix           bal all balance 500000 0.9 shift z 20 1.0
+
+reset_timestep 0 
+run ${runtime} upto 
+undump dumpUnloading
+
+
+write_data lmp_data/UnloadingRigid.data 
+write_restart lmp_bin/UnloadingRigid.bin 
+
