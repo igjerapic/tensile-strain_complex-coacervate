@@ -2,9 +2,9 @@ read_restart lmp_bin/SlabEq.bin
 
 include ${SETTINGS_FILE}
 
-change_box all boundary p p f 
+change_box all boundary p p f
 
-dielectric 1.0
+dielectric 1.0              
 variable epsilon_subs equal ${epsilon_PS}
 
 pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
@@ -14,7 +14,7 @@ pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
 ####################################
 #### ADD SUBSTRATES
 ####################################
-# lattice parameters for substrates 
+# lattice parameters for substrates
 variable sigmaSub equal 0.8
 variable spacing equal 2^(1/6)*${sigmaSub}
 variable diametro equal ${spacing}/sqrt(2)
@@ -54,9 +54,10 @@ write_data lmp_data/startEquilSubs.data
 ####################################
 
 # run under NPT 
-fix topRigid1 top_sub rigid/nve single
-fix botRigid1 bot_sub rigid/nve single
-fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy
+fix tether bot_sub spring/self ${TETHER_STRENGTH}
+fix_modify tether energy yes
+fix topRigid1 top_sub rigid/nve single 
+fix npt1 mobile npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy
 
 dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs1 sort id
@@ -69,13 +70,11 @@ write_data lmp_data/equilSubstratesNPT.data
 write_restart lmp_bin/equilSubstratesNPT.bin
 unfix npt1
 unfix topRigid1
-unfix botRigid1
 undump mydumpSubs1
 
 # run under NVT
-fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping} 
+fix nvt1 mobile nvt temp ${Temp2} ${Temp2} ${Tdamping} 
 fix topRigid2 top_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping} 
-fix botRigid2 bot_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping} 
 
 dump mydumpSubs2 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs2 sort id
@@ -86,3 +85,4 @@ run 50000 upto
 
 write_data lmp_data/equilSubstrates.data
 write_restart lmp_bin/equilSubstrates.bin
+

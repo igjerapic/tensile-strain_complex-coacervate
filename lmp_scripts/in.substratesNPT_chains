@@ -2,10 +2,10 @@ read_restart lmp_bin/SlabEq.bin
 
 include ${SETTINGS_FILE}
 
-change_box all boundary p p f
+change_box all boundary p p f 
 
-dielectric 1.0              
-variable epsilon_subs equal 3.0
+dielectric 1.0
+variable epsilon_subs equal ${epsilon_PS}
 
 pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
 pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
@@ -14,7 +14,7 @@ pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
 ####################################
 #### ADD SUBSTRATES
 ####################################
-# lattice parameters for substrates
+# lattice parameters for substrates 
 variable sigmaSub equal 0.8
 variable spacing equal 2^(1/6)*${sigmaSub}
 variable diametro equal ${spacing}/sqrt(2)
@@ -27,6 +27,7 @@ variable zloNow equal zlo
 variable zhiOG equal ${zhiNow}
 variable zloOG equal ${zloNow}
 
+# elongment values were determined by iterative testing for slab thickness of 16
 variable elongment equal 0.5 # was determined by testing
 change_box all z delta -${elongment} ${elongment} units box
 
@@ -47,44 +48,36 @@ group mobile subtract all top_sub
 
 change_box all z delta -5 5
 
+write_data lmp_data/startEquilSubs.data
 ####################################
 #### EQUILIBRATE CONFINED SYSTEM
 ####################################
 
-# run under nvt with "fixed" substrate atoms
-fix tether bot_sub spring/self 100.0
-fix_modify tether energy yes
-fix nvt1 mobile nvt temp ${Temp2} ${Temp2} ${Tdamping}
-fix topRigid top_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping}
+# run under NPT 
+fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy
 
-dump mydumpSubs all custom 500 lmp_trj/equilSubstrates.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
-dump_modify mydumpSubs sort id
+dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
+dump_modify mydumpSubs1 sort id
 
-restart 500 lmp_bin/restartSubs1.bin lmp_bin/restartSubs2.bin
+restart 500 lmp_bin/restartSubsNPT1.bin lmp_bin/restartSubsNPT2.bin
+reset_timestep 0
+run 50000 upto
+
+write_data lmp_data/equilSubstratesNPT.data
+write_restart lmp_bin/equilSubstratesNPT.bin
+unfix npt1
+undump mydumpSubs1
+
+# run under NVT
+fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping} 
+fix topRigid2 top_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping} 
+
+dump mydumpSubs2 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
+dump_modify mydumpSubs2 sort id
+
+restart 500 lmp_bin/restartSubsNVT1.bin lmp_bin/restartSubsNVT2.bin
 reset_timestep 0
 run 50000 upto
 
 write_data lmp_data/equilSubstrates.data
 write_restart lmp_bin/equilSubstrates.bin
-
-undump mydumpSubs
-unfix topRigid
-unfix nvt1 
-unfix tether 
-
-
-# Make top substrate soft
-fix tether1 subs spring/self 100.0
-fix_modify tether1 energy yes
-fix nvt2 all nvt temp ${Temp2} ${Temp2} ${Tdamping}
-
-dump mydumpSoftSubs all custom 500 lmp_trj/equilSoftSubstrates.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
-dump_modify mydumpSoftSubs sort id
-
-restart 500 lmp_bin/restartSoftSubs1.bin lmp_bin/restartSoftSubs2.bin
-reset_timestep 0
-run 50000 upto 
-
-write_data lmp_data/equilSoftSubstrates.data
-write_restart lmp_bin/equilSoftSubstrates.bin
-
