@@ -64,9 +64,9 @@ variable slabDensity equal ${mass_chains}/v_slabVol
 
 # adhesion procedure settings 
 variable rate equal ${RATE}
-variable final_strain equal 2.0 
+variable final_strain equal 3.0 
 variable delta_z equal ${final_strain}*${z0}
-variable runtime equal (${final_strain}-1)/(${rate}*${dt})
+variable runtime equal round(${delta_z}/(${rate}*${dt}))
 variable velSeed equal 934851
 variable thermoT equal 100
 
