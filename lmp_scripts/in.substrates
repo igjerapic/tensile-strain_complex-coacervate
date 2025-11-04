@@ -46,7 +46,8 @@ group top_sub region topsubstrate
 group bot_sub region bottomsubstrate
 group mobile subtract all top_sub 
 
-change_box all z delta -5 5
+change_box all z delta -5 100
+change_box all boundary p p p
 
 write_data lmp_data/startEquilSubs.data
 ####################################
@@ -54,10 +55,7 @@ write_data lmp_data/startEquilSubs.data
 ####################################
 
 # run under NPT 
-fix topRigid1 top_sub rigid/nve single
-fix botRigid1 bot_sub rigid/nve single
-fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy
-
+fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} iso ${PressEq} ${PressEq} ${Pdamping} 
 dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs1 sort id
 
@@ -65,24 +63,6 @@ restart 500 lmp_bin/restartSubsNPT1.bin lmp_bin/restartSubsNPT2.bin
 reset_timestep 0
 run 50000 upto
 
-write_data lmp_data/equilSubstratesNPT.data
-write_restart lmp_bin/equilSubstratesNPT.bin
-unfix npt1
-unfix topRigid1
-unfix botRigid1
-undump mydumpSubs1
-
-# run under NVT
-fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping} 
-fix topRigid2 top_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping} 
-fix botRigid2 bot_sub rigid/nvt single temp ${Temp2} ${Temp2} ${Tdamping} 
-
-dump mydumpSubs2 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
-dump_modify mydumpSubs2 sort id
-
-restart 500 lmp_bin/restartSubsNVT1.bin lmp_bin/restartSubsNVT2.bin
-reset_timestep 0
-run 50000 upto
-
 write_data lmp_data/equilSubstrates.data
 write_restart lmp_bin/equilSubstrates.bin
+

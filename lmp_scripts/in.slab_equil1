@@ -13,7 +13,7 @@ fix stabilize all momentum 1 linear 1 1 1
 #fix z walls moving with the box 
 variable wallL equal ramp(zlo,zlo)
 variable wallH equal ramp(zhi,zhi)
-fix walls all wall/lj93 zlo v_wallL 1.0 1.0 2.5 zhi v_wallH 1.0 1.0 2.5
+fix walls all wall/lj126 zlo v_wallL ${epsilon_subs} 1.0 2.5 zhi v_wallH ${epsilon_subs} 1.0 2.5
 fix_modify walls energy yes
 
 reset_timestep 0

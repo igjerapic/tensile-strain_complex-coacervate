@@ -66,6 +66,9 @@ variable n_atoms equal atoms
 variable Lbox equal (${n_atoms}/(${target_density}*2*${thickFinal}))^0.5/2 # half of total thickness
 variable thick1 equal ${thickFinal}+4.0
 
+# setting wall strength to be same as substrate strength
+variable epsilon_subs equal ${epsilon_PS}
+
 variable thermoT equal 100
 variable velSeed equal 934851
 
