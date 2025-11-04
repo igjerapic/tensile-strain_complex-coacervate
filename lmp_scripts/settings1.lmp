@@ -62,16 +62,17 @@ variable zHalf equal ${z0}/2.0
 variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
 variable slabDensity equal ${mass_chains}/v_slabVol
 
+
 # adhesion procedure settings 
 variable rate equal ${RATE}
 variable final_strain equal 3.0 
 variable delta_z equal ${final_strain}*${z0}
-variable runtime equal round(${delta_z}/(${rate}*${dt}))
+if "${RATE}==0.0" then "variable runtime equal 25000" else "variable runtime equal round(${delta_z}/(${rate}*${dt}))"
 variable velSeed equal 934851
 variable thermoT equal 100
 
 ###################################
-####  ADDITIONAL GROUPS
+####  REDEFINING TOP AND BOTTOM SUBSTRATE GROUPS 
 ####################################
 region topBox plane 0 0 ${zHalf} 0 0 1
 region botBox plane 0 0 ${zHalf} 0 0 -1
@@ -80,27 +81,18 @@ group botAtoms region botBox
 
 group top_sub subtract topAtoms chains
 group bot_sub subtract botAtoms chains
-group mobile subtract all top_sub
 
 ####################################
 #### THERMO-STYLE
 ####################################
-thermo  ${thermoT}
-
 compute	stressA all stress/atom NULL
 compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
-compute potEng all pe/atom 
-compute voronoi chains voronoi/atom 
-compute p_slab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 
 variable	pz equal -(c_p[3])/(vol)
 variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
 
-variable	pz_slab equal -(c_p_slab[3])/(v_slabVol)
-variable	pxy_slab equal -(c_p_slab[1]+c_p_slab[2])/(2*v_slabVol)
-
-
-thermo_style	custom step time temp ke etotal ebond epair ecoul evdwl enthalpy press v_pxy v_pz v_slabDensity v_pz_slab v_pxy_slab spcpu cpuremain 
+thermo  ${thermoT}
+thermo_style	custom step time temp ke etotal ebond epair ecoul evdwl enthalpy press v_pxy v_pz v_slabDensity spcpu cpuremain 
 thermo_modify line yaml format none
 ####################################
 #### INTEGRATION

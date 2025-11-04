@@ -6,7 +6,6 @@ pair_style lj/cut/coul/long 2.5 10.0
 bond_style fene 
 
 read_data lmp_data/equilSubstrates.data
-# read_restart lmp_bin/equilSubstrates.bin
 change_box all boundary p p f
 
 include ${SETTINGS_FILE}
@@ -14,21 +13,58 @@ include ${SETTINGS_FILE}
 ####################################
 #### INCREASE BOX SIZE FOR ELONGATION
 ####################################
-change_box all z delta 0.0 ${delta_z}
-
-# fix stabilize all momentum 1 linear 1 1 1
-fix nvt1 mobile nvt temp ${Temp} ${Temp} ${Tdamping}
+# change_box all z delta 0.0 ${delta_z}
 
 ####################################
-#### ELONGATION
+#### VARIABLES FOR ANALYSIS 
+####################################
+# forces and potential energy 
+compute potEng all pe/atom 
+compute forceZ_chains chains reduce sum fz 
+compute forceZ_topSub top_sub reduce sum fz 
+compute forceZ_botSub bot_sub reduce sum fz
+
+# strain and stress using different definitions of volume
+variable strain equal step*${dt}*${rate}
+
+compute voronoi all voronoi/atom #    
+compute volVoronoiTot chains reduce sum c_voronoi[1]
+
+compute stressZ chains reduce sum c_stressA[3] 
+variable engStressZ1 equal "-1 / v_slabVol * c_stressZ"      # volume occupied by polymers (including holes)
+variable engStressZ2 equal "-1 / c_volVoronoiTot * c_stressZ"   # total voronoi volume 
+
+# local stress on beads using voronoi volume and size of bead as estimates
+variable stressA1xx atom "-1 / c_voronoi[1] * c_stressA[1]"
+variable stressA1yy atom "-1 / c_voronoi[1] * c_stressA[2]"
+variable stressA1zz atom "-1 / c_voronoi[1] * c_stressA[3]"
+variable stressA1xy atom "-1 / c_voronoi[1] * c_stressA[4]"
+variable stressA1xz atom "-1 / c_voronoi[1] * c_stressA[5]"
+variable stressA1yz atom "-1 / c_voronoi[1] * c_stressA[6]"
+
+variable beadVol equal "4.0 / 3.0 * PI * 0.5^3" 
+variable stressA2xx atom -1/${beadVol}*c_stressA[1]
+variable stressA2yy atom -1/${beadVol}*c_stressA[2]
+variable stressA2zz atom -1/${beadVol}*c_stressA[3]
+variable stressA2xy atom -1/${beadVol}*c_stressA[4]
+variable stressA2xz atom -1/${beadVol}*c_stressA[5]
+variable stressA2yz atom -1/${beadVol}*c_stressA[6]
+variable vonMises1 atom "( 0.5 * ((v_stressA1xx - v_stressA1yy)^2 + (v_stressA1yy - v_stressA1zz)^2 + (v_stressA1zz - v_stressA1xx)^2) + 3 * (v_stressA1xy + v_stressA1xz + v_stressA1yz))^0.5"
+variable vonMises2 atom "( 0.5 * ((v_stressA2xx - v_stressA2yy)^2 + (v_stressA2yy - v_stressA2zz)^2 + (v_stressA2zz - v_stressA2xx)^2) + 3 * (v_stressA2xy + v_stressA2xz + v_stressA2yz))^0.5"
+
+
+####################################
+#### TENSILE TEST
 ####################################
 
-fix tether bot_sub spring/self 100.0
-fix_modify tether energy yes
+fix nvt1 chains nvt temp ${Temp} ${Temp} ${Tdamping}
 fix unloading top_sub move linear 0.0 0.0 ${rate}  
 
+fix stressCurve chains print 1 "${strain} ${engStressZ1} ${engStressZ2}" file stressCurves.dat screen no
+# fix stressCurve2 chains print 1 "${engStressZ2}" file stress_totVoronoi.dat screen no 
+# fix strainCurve chains print 1 "${strain}" file strain.dat screen no
 
-dump dumpUnloading all custom 100 lmp_trj/UnloadingRigid.dat id type mol xu yu zu vx vy vz c_potEng c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
+dump dumpUnloading all custom 100 lmp_trj/stress.dat id type mol xu yu zu vx vy vz fx fy fz c_potEng v_vonMises1 v_vonMises2 c_voronoi[1] c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6] 
 dump_modify dumpUnloading sort id
 
 # update boxes for pppm calculation
