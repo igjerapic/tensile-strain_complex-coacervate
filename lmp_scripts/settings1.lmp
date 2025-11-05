@@ -22,7 +22,7 @@ variable epsilon_subs equal ${epsilon_PS}
 
 pair_style lj/cut/coul/long 2.5 10.0  
 kspace_style pppm 1.0e-6
-kspace_modify slab 3.0 
+kspace_modify slab 3.0 fftbench yes
 
 pair_coeff    * * 1.0 1.0 2.5 
 pair_coeff    1*2 1*2 1.0 1.0 2.5 
@@ -67,7 +67,7 @@ variable slabDensity equal ${mass_chains}/v_slabVol
 variable rate equal ${RATE}
 variable final_strain equal 3.0 
 variable delta_z equal ${final_strain}*${z0}
-if "${RATE}==0.0" then "variable runtime equal 25000" else "variable runtime equal round(${delta_z}/(${rate}*${dt}))"
+if "${RATE}==0.0" then "variable runtime equal 10000" else "variable runtime equal round(${delta_z}/(${rate}*${dt}))"
 variable velSeed equal 934851
 variable thermoT equal 100
 
@@ -86,13 +86,21 @@ group bot_sub subtract botAtoms chains
 #### THERMO-STYLE
 ####################################
 compute	stressA all stress/atom NULL
-compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 
-variable	pz equal -(c_p[3])/(vol)
-variable	pxy equal -(c_p[1]+c_p[2])/(2*vol)
+compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+variable pTot equal -(c_p[1]+c_p[2]+c_p[3])/(3*vol)
+variable pz equal -(c_p[3])/(vol)
+variable pxy equal -(c_p[1]+c_p[2])/(2*vol)
+
+compute   pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+variable  pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*vol)
+variable	pzChains equal -(c_pSlab[3])/(vol)
+variable	pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*vol)
+
+compute chainTemp chains temp 
 
 thermo  ${thermoT}
-thermo_style	custom step time temp ke etotal ebond epair ecoul evdwl enthalpy press v_pxy v_pz v_slabDensity spcpu cpuremain 
+thermo_style	custom step time temp c_chainTemp ke etotal ebond epair ecoul evdwl enthalpy v_pTot press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains v_slabDensity spcpu cpuremain 
 thermo_modify line yaml format none
 ####################################
 #### INTEGRATION
