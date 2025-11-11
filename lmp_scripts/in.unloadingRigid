@@ -53,8 +53,6 @@ variable vonMises2 atom "( 0.5 * ((v_stressA2xx - v_stressA2yy)^2 + (v_stressA2y
 ####################################
 
 fix nvt1 chains nvt temp ${Temp} ${Temp} ${Tdamping}
-# fix_modify nvt1 temp mobile
-
 fix unloading top_sub move linear 0.0 0.0 ${rate}  
 # fix stressCurve chains print 1 "${strain} ${engStressZ1} ${engStressZ2}" file stressCurves.dat screen no
 
