@@ -85,7 +85,7 @@ compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
 variable pz equal -(c_p[3])/(vol)
 variable pxy equal -(c_p[1]+c_p[2])/(2*vol)
 
-compute pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+compute pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6]
 variable pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*vol)
 variable pzChains equal -(c_pSlab[3])/(vol)
 variable pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*vol)
