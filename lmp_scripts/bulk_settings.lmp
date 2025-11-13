@@ -1,0 +1,87 @@
+###################################
+### GENERAL SETTINGS FOR THE LAMMPS SCRIPT FOR COMPRESSING AND STRETCHING 
+### A COMPLEX COACERVATE
+###################################
+
+neighbor 0.8 bin
+neigh_modify one 8000 every 1
+
+###################################
+####  GROUPS
+####################################
+
+group  pos_chains  type 1
+group  neg_chains  type 2
+group  chains      type 1 2 
+
+####################################
+####  POTENTIALS
+####################################
+
+bond_style    fene
+bond_coeff    1 30.0 1.5 1.0 1.0  # taken from doi:10.1021/acsmacrolett.5c00323 
+
+# have different coeffs for substrate atoms? 
+bond_coeff    2 0.0 1.5 1.0 1.0 
+special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
+
+pair_style lj/cut/coul/cut 1.12246 10.0
+
+set group pos_chains charge 1.0 
+set group neg_chains charge -1.0
+
+####################################
+####  VARIABLES DEFINITION
+####################################
+variable Temp equal 1.5
+variable Temp2 equal 1.0
+variable PressAnn equal 10.0
+variable PressEq equal 0.0
+variable dt equal 0.005
+variable Tdamping equal 100*${dt}
+variable Pdamping equal 1000*${dt}
+
+# determine density of coacervate slab
+variable mass_chains equal mass(chains)
+variable xmin equal bound(chains,xmin)
+variable xmax equal bound(chains,xmax)
+variable ymin equal bound(chains,ymin)
+variable ymax equal bound(chains,ymax)
+variable zmin equal bound(chains,zmin)
+variable zmax equal bound(chains,zmax)
+
+variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
+variable slabDensity equal ${mass_chains}/v_slabVol
+
+# runtimes 
+variable runtime equal 20000
+variable runtimeShort equal 10000
+
+variable thermoT equal 100
+variable velSeed equal 934851
+
+####################################
+#### THERMO-STYLE
+####################################
+
+thermo  ${thermoT}
+
+compute chainTemp chains temp 
+
+compute	stressA all stress/atom NULL
+compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+variable pz equal -(c_p[3])/(vol)
+variable pxy equal -(c_p[1]+c_p[2])/(2*vol)
+
+compute pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6]
+variable pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*vol)
+variable pzChains equal -(c_pSlab[3])/(vol)
+variable pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*vol)
+
+thermo_style	custom step time temp c_chainTemp ebond epair ecoul evdwl ke etotal enthalpy vol v_slabVol density v_slabDensity press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains spcpu cpuremain 
+thermo_modify line yaml format none
+
+####################################
+#### INTEGRATION
+####################################
+timestep      ${dt}

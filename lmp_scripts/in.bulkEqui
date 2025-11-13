@@ -1,0 +1,133 @@
+##################
+# VARIABLES
+##################
+
+# variables to be inputted later when script is implemented 
+variable packing_density equal 1.0
+
+# chain properties 
+variable sigma equal 1.0
+variable particle_vol equal (4.0/3.0)*PI*(0.5${sigma})^3
+
+variable num_chains equal 512
+variable chain_length equal 32
+variable n_beads equal 2*${num_chains}*${chain_length} # have positive and negative chains
+variable tot_vol equal ${n_beads}*${particle_vol}
+
+# simulation and creation box dimensions (were tuned such that there is no passing of 
+# molecules through z boundaries)
+variable Lz equal ${chain_length}
+variable L equal  2*(${tot_vol}/(${Lz}*${packing_density}))^0.5
+variable zbox equal ${Lz}/2.0
+variable boxside equal ${L}/2.0
+
+####################
+### MOLECULE FILE
+####################
+variable mol_file string ${TOPO_FILE}
+variable packFile string 'packed.data'
+
+####################
+### PACKING CHAINS 
+####################
+units lj 
+atom_style full
+dimension 3 
+boundary p p p 
+region simbox   block  -${boxside} ${boxside} -${boxside} ${boxside} -${zbox} ${zbox} 
+
+# create the simulation box 
+create_box 5 simbox bond/types 2 extra/bond/per/atom 5 extra/special/per/atom 100
+molecule mol1 ${mol_file}
+
+# create and label chains 
+create_atoms  0   random    ${num_chains}   12345   simbox    mol mol1 12553 #remap no
+group pos_chains type 1
+create_atoms  0   random    ${num_chains}   23456   simbox    mol mol1 12553 #remap no
+group neg_chains subtract all pos_chains
+
+# set the type of the atoms 
+set group pos_chains type 1 
+set group neg_chains type 2 
+
+mass    * 1.0
+write_data   ${packFile} nofix nocoeff 
+
+####################################
+#### START EQUILIBRATION PROCUDURE
+####################################
+include ${SETTINGS_FILE}
+####################################
+#### MINIMIZATION AND RAMPING UP CHARGES
+####################################
+pair_coeff * * 1.0 1.0 1.12246 10.0
+dielectric 10.0 
+
+# minimization
+velocity all create ${Temp} ${velSeed}
+minimize    0.0 1.0e-8 1000 100000 
+
+fix nvtCharging all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+# output data 
+dump dumpCharging all custom 200 lmp_trj/Charging.dat id type mol xu yu zu vx vy vz 
+dump_modify dumpCharging sort id 
+
+####################################
+#### RAMP UP THE INTERACTIONS IN LOOP
+####################################
+variable chargingSteps equal 2000
+variable diel equal 10.0 
+variable final_diel equal 1.0 
+reset_timestep 0 
+label chargingLoop
+if "${diel}==${final_diel}" then "jump SELF break"
+
+label continue
+variable diel equal ${diel}-1.0
+dielectric ${diel}
+run ${chargingSteps}
+jump SELF chargingLoop
+
+label break
+
+write_data lmp_data/fullyCharged.data
+write_restart lmp_bin/fullyCharged.bin
+unfix nvtCharging
+undump dumpCharging
+
+####################################
+#### EQUILIBRATION
+####################################
+# change to full LJ interaction (including hydrophobic part)
+pair_coeff    * * 1.0 1.0 2.5 10.0
+fix stabilize all momentum 1 linear 1 1 1
+
+reset_timestep 0
+fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} iso ${PressAnn} ${PressAnn} ${Pdamping} 
+run ${runtime}
+unfix npt1
+write_restart lmp_bin/PressAnn1.bin
+
+reset_timestep 0
+fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} iso ${PressAnn} ${PressEq} ${Pdamping} 
+run ${runtime}
+unfix npt2
+write_restart lmp_bin/PressAnn2.bin
+
+reset_timestep 0
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} iso ${PressEq} ${PressEq} ${Pdamping} 
+run ${runtime}
+write_restart lmp_bin/PressEq.bin
+
+reset_timestep 0
+restart 1000 lmp_bin/FinalAnneal1.bin lmp_bin/FinalAnneal2.bin
+
+dump mydumpEqui all custom 1000 lmp_trj/Anneal.dat id type mol xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run 50000 upto
+
+write_data lmp_data/SlabEq.data
+write_restart lmp_bin/SlabEq.bin
+
