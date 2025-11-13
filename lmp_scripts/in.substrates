@@ -46,16 +46,14 @@ group top_sub region topsubstrate
 group bot_sub region bottomsubstrate
 group mobile subtract all top_sub 
 
-change_box all z delta -5 100
-change_box all boundary p p p
-
+change_box all boundary p p s
 write_data lmp_data/startEquilSubs.data
 ####################################
 #### EQUILIBRATE CONFINED SYSTEM
 ####################################
 
 # run under NPT 
-fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} iso ${PressEq} ${PressEq} ${Pdamping} 
+fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy dilate chains 
 fix_modify npt1 temp chainTemp
 
 dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
