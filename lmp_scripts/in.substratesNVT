@@ -55,9 +55,9 @@ write_data lmp_data/startEquilSubs.data
 
 # run under NVT 
 fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping}
-# fix subRigid top_sub rigid/nve single 
+fix upperForce top_sub aveforce 0.0 0.0 -0.005
 
-dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
+dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[2] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs1 sort id
 
 restart 500 lmp_bin/restartSubsNVT1.bin lmp_bin/restartSubsNVT2.bin
