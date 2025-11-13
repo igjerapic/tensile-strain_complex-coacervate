@@ -48,12 +48,15 @@ group mobile subtract all top_sub
 
 change_box all boundary p p s
 write_data lmp_data/startEquilSubs.data
+
 ####################################
 #### EQUILIBRATE CONFINED SYSTEM
 ####################################
+variable subDensity equal count(top_sub)/(abs(xhi-xlo)*abs(yhi-ylo))
+thermo_style	custom step time temp c_chainTemp ebond epair ecoul evdwl ke etotal enthalpy vol v_slabVol density v_slabDensity press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains v_subDensity spcpu cpuremain 
 
 # run under NPT 
-fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy dilate chains 
+fix npt1 chains npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
 fix_modify npt1 temp chainTemp
 
 dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNPT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
@@ -61,7 +64,7 @@ dump_modify mydumpSubs1 sort id
 
 restart 500 lmp_bin/restartSubsNPT1.bin lmp_bin/restartSubsNPT2.bin
 reset_timestep 0
-run 50000 upto
+run 200000 upto
 
 write_data lmp_data/equilSubstrates.data
 write_restart lmp_bin/equilSubstrates.bin
