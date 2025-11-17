@@ -44,17 +44,40 @@ create_atoms 3 region substrate
 group subs type 3
 group top_sub region topsubstrate
 group bot_sub region bottomsubstrate
-group mobile subtract all top_sub 
 
-change_box all boundary p p s
 write_data lmp_data/startEquilSubs.data
+
+####################################
+#### DETERMINE STRESS ON CHAINS
+####################################
+compute chainTemp chains temp 
+compute stressPoly chains stress/atom chainTemp
+compute pChainxx reduce sum c_stressPoly[1] 
+compute pChainyy reduce sum c_stressPoly[2] 
+compute pChainzz reduce sum c_stressPoly[3] 
+variable pChainxxv equal -c_pChainxx/v_chainVol
+variable pChainyyv equal -c_pChainyy/v_chainVol
+variable pChainzzv equal -c_pChainzz/v_chainVol
+variable chainPress equal (v_pChainxxv+v_pChainyyv+v_pChainzzv)/3
+
+compute	stressA all stress/atom NULL
+compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
+variable pz equal -(c_p[3])/(vol)
+variable pxy equal -(c_p[1]+c_p[2])/(2*vol)
+
+compute pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6]
+variable pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*v_chainVol)
+variable pzChains equal -(c_pSlab[3])/(v_chainVol)
+variable pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*v_chainVol)
+
 ####################################
 #### EQUILIBRATE CONFINED SYSTEM
 ####################################
+neigh_modify exclude group subs subs
 
 # run under NVT 
 fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping}
-fix upperForce top_sub aveforce 0.0 0.0 -0.005
+fix upperForce top_sub aveforce 0.0 0.0 -${subForce}
 fix nve1 top_sub nve
 
 dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[2] c_stressA[2] c_stressA[3]
