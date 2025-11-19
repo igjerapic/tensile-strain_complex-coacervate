@@ -50,8 +50,8 @@ variable ymax equal bound(chains,ymax)
 variable zmin equal bound(chains,zmin)
 variable zmax equal bound(chains,zmax)
 
-variable slabVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
-variable slabDensity equal ${mass_chains}/v_slabVol
+variable chainVol equal abs(v_xmax-v_xmin)*abs(v_ymax-v_ymin)*abs(v_zmax-v_zmin)
+variable slabDensity equal ${mass_chains}/v_chainVol
 
 # runtimes 
 variable runtime equal 20000
@@ -90,7 +90,7 @@ variable pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*vol)
 variable pzChains equal -(c_pSlab[3])/(vol)
 variable pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*vol)
 
-thermo_style	custom step time temp c_chainTemp ebond epair ecoul evdwl ke etotal enthalpy vol v_slabVol density v_slabDensity press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains spcpu cpuremain 
+thermo_style	custom step time temp c_chainTemp ebond epair ecoul evdwl ke etotal enthalpy vol v_chainVol density v_slabDensity press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains  
 thermo_modify line yaml format none
 
 ####################################
