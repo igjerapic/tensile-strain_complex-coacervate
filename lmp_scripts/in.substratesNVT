@@ -1,29 +1,64 @@
 processors * * 1
-read_restart lmp_bin/SlabEq.bin
+###################################
+#### directories to store data
+###################################
+variable data_dir string "${JOBDIR}/lmp_data"
+variable bin_dir string "${JOBDIR}/lmp_bin"
+variable trj_dir string "${JOBDIR}/lmp_trj"
 
-# units lj 
-# atom_style    full
-# dimension     3
-# boundary p p f
-# 
-# pair_style lj/cut/coul/long 2.5 10.0 
-# bond_style fene 
-# 
-# # processors * * 1 file grid_1Z.dat# For increased efficiency? 
-# 
-# read_data lmp_data/SlabEq.data
-# # change_box all boundary p p f
+# variable start_bin string "${bin_dir}/SlabEq.bin"
+# read_restart lmp_bin/SlabEq.bin
+
+units lj 
+atom_style    full
+dimension     3
+boundary p p f
+
+pair_style lj/cut/coul/long 2.5 10.0 
+bond_style fene 
+
+variable start_data string "${data_dir}/SlabEq.data"
+read_data ${start_data}
 
 include ${SETTINGS_FILE}
 
 dielectric 1.0
-variable epsilon_subs equal ${epsilon_PS}
+
+# Input variables from bash generation
+variable epsilon_subs equal ${epLJ}
+variable target_density equal ${rho}
+variable thickFinal equal ${D}
 
 pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
 pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
 pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
 pair_coeff    4 * 0.0 1.0 2.5 10.0 # substrate self-interaction
 pair_coeff    5 * 0.0 1.0 2.5 10.0 # substrate self-interaction
+
+####################################
+#### SQUEEZE SLAB IN XY DIR TO DESIRED DENSITY
+####################################
+fix nvt1 all nvt temp ${Temp2} ${Temp2} ${Tdamping} 
+variable wallH equal ramp(zhi,zhi)
+variable wallL equal ramp(zlo,zlo)
+fix walls all wall/lj126 zlo v_wallL ${epsilon_subs} 1.0 2.5 zhi v_wallH ${epsilon_subs} 1.0 2.5
+fix_modify walls energy yes
+
+variable n_atoms equal atoms
+variable Lbox equal (${n_atoms}/(${target_density}*${thickFinal}))^0.5/2 # half of total thickness
+fix shrink all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} 
+
+variable trj_file string "${trj_dir}/Squeeze3.dat"
+dump dump1 all custom 200 ${trj_file} id type mol xu yu zu vx vy vz 
+dump_modify dump1 sort id 
+
+reset_timestep 0
+run 10000
+
+unfix shrink
+unfix walls
+unfix nvt1
+undump dump1
 
 ####################################
 #### ADD SUBSTRATES
@@ -65,7 +100,9 @@ variable zup equal ${zmax}+(${sigmaSub})
 variable zbot equal ${zmin}-${sigmaSub}
 set group top_sub z ${zup} 
 set group bot_sub z ${zbot}
-write_data lmp_data/startEquilSubs.data
+
+variable data_file string "${data_dir}/startEquilSubs.data"
+write_data ${data_file}
 
 ####################################
 #### DETERMINE STRESS ON CHAINS
@@ -93,13 +130,21 @@ neigh_modify exclude group subs subs
 # run under NVT 
 fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping}
 
-dump mydumpSubs1 all custom 500 lmp_trj/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
+variable trj_file string "${trj_dir}/equilSubstratesNVT.dat"
+dump mydumpSubs1 all custom 500 ${trj_file} id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
 dump_modify mydumpSubs1 sort id
 
-restart 500 lmp_bin/restartSubsNVT1.bin lmp_bin/restartSubsNVT2.bin
+variable restart1 string "${bin_dir}/restartSubsNVT1.bin"
+variable restart2 string "${bin_dir}/restartSubsNVT2.bin"
+restart 500 ${restart1} ${restart2}
 reset_timestep 0
-run 500000 upto
+run 250000 upto
 
-write_data lmp_data/equilSubstrates.data
-write_restart lmp_bin/equilSubstrates.bin
+variable data_file string "${data_dir}/equilSubstrates.bin"
+variable bin_file string "${bin_dir}/equilSubstrates.bin"
+write_data ${data_file}
+write_restart ${bin_file} 
+
+variable final_file string "${JOBDIR}/subEquil.done"
+print "Done with sub equilibration" file ${final_file}
 

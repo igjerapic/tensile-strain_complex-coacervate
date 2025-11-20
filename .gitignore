@@ -1,5 +1,8 @@
 # data files from simulation
-workspace
+workspace/*
+# include scripts in stowed-workspace
+!stowed-workspace/*
+
 lmp_data/
 lmp_bin/
 start/

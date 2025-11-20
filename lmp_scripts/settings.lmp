@@ -3,6 +3,7 @@
 ### A COMPLEX COACERVATE
 ###################################
 
+
 neighbor 0.8 bin
 neigh_modify one 8000 every 1
 
@@ -60,7 +61,9 @@ variable runtimeShort equal 10000
 # final thickness calculation      
 #TODO make Lbox, target_density, and tot_chainVol inputted 
 # variable thickFinal equal 8.0 # want a final thickness of 16 
-variable target_density equal 0.8 
+variable epsilon_PS equal ${epLJ}
+variable target_density equal ${rho}
+variable thickFinal equal ${D}
 
 variable n_atoms equal atoms
 variable Lbox equal (${n_atoms}/(${target_density}*2*${thickFinal}))^0.5/2 # half of total thickness

@@ -1,0 +1,44 @@
+[workspace]
+value_file = "signac_statepoint.json"
+
+[default.action]
+command = "python actions.py --action $ACTION_NAME {directories}"
+
+[[action]]
+name = "makedirs"
+command = "(cd workspace/{directory} && mkdir lmp_bin lmp_data lmp_trj)"
+products = ["lmp_data", "lmp_bin", "lmp_trj"]
+
+[[action]]
+previous_actions = ["makedirs"]
+name = "copySlab"
+command = "cp ../../N256_L32_D16_epLJ3.0/slabEquil_wallLJ3.0/lmp_bin/SlabEq.bin workspace/{directory}/lmp_bin/. && cp ../../N256_L32_D16_epLJ3.0/slabEquil_wallLJ3.0/lmp_data/SlabEq.data workspace/{directory}/lmp_data/."
+products = ["lmp_bin/SlabEq.bin", "lmp_data/SlabEq.data"]
+
+[[action]]
+previous_actions = ["copySlab"]
+name = "subEquil"
+products = ["subEquil.done"]
+command = " lmp $(./submit_lmp.sh -a $ACTION_NAME -d workspace/{directory} -s lmp_scripts/settings.lmp)"
+launchers = ["mpi"]
+
+[action.group]
+maximum_size = 1
+[action.resources]
+walltime.per_submission = "15:00:00" # comment out when running locally (none cluster)
+processes.per_submission = 4
+memory_per_cpu_mb = 256
+
+[action.submit_options.habrok]
+setup = """
+module load LAMMPS/23Jun2022-foss-2021b-kokkos
+module unload SciPy-bundle/2021.10-foss-2021b
+module load Anaconda3/2024.02-1
+conda activate bsa
+"""
+output_file_path = "slurm_outs"
+
+
+[[action]]
+name = "test"
+command = "./test.sh {directory}"
