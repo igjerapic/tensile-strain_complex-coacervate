@@ -1,7 +1,13 @@
 # data files from simulation
-workspace/*
+workspace
+.row
+.signac
+
 # include scripts in stowed-workspace
 !stowed-workspace/*
+
+substrate-dev/*/lmp_scripts
+#
 
 lmp_data/
 lmp_bin/

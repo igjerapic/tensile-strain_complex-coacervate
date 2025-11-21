@@ -1,0 +1,124 @@
+units         lj
+atom_style    full
+dimension     3
+
+# workspace directrories
+variable data_dir string "${JOBDIR}/lmp_data"
+variable bin_dir string "${JOBDIR}/lmp_bin"
+variable trj_dir string "${JOBDIR}/lmp_trj"
+
+read_data start/packed.data
+change_box all boundary p p f 
+
+include ${SETTINGS_FILE}
+
+####################################
+#### REPULSIVE SQUEEZE  
+####################################
+pair_coeff * * 1.0 1.0 1.12246 10.0
+dielectric 10.0 
+
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls all wall/lj93 zlo v_wallL ${epsilon_PS} 1.0 2.5 zhi v_wallH ${epsilon_PS} 1.0 2.5
+fix_modify walls energy yes
+
+velocity all create ${Temp} ${velSeed}
+minimize    0.0 1.0e-8 1000 100000 
+
+fix nvt1 all nvt temp ${Temp} ${Temp} ${Tdamping}
+
+fix shrink1 all deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} z final -${thick1} ${thick1}
+
+dump mydumpSqeeze1 all custom 200 ${trj_dir}/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze1 sort id 
+reset_timestep 0
+run ${runtimeShort}
+
+unfix  fix shrink1
+undump mydumpSqeeze1
+
+####################################
+#### ATTRACTIVE SQUEEZE  
+####################################
+pair_coeff    * * 1.0 1.0 2.5 10.0
+
+fix shrink2 all deform 1 z final -${thick2} ${thick2}
+
+dump mydumpSqeeze2 all custom 100 ${trj_dir}/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze2 sort id 
+
+reset_timestep 0
+run ${runtimeShort}
+
+write_data ${data_dir}/startCharging.data
+write_restart ${bin_dir}/startCharging.bin
+
+unfix shrink2
+undump mydumpSqeeze2
+
+####################################
+#### START CHARGING
+####################################
+dump mydumpCharging all custom 200 ${trj_dir}/Charging.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpCharging sort id 
+
+#### RAMP UP THE INTERACTIONS IN LOOP
+variable chargingSteps equal 2000
+variable diel equal 10.0 
+variable final_diel equal 1.0 
+reset_timestep 0 
+label chargingLoop
+if "${diel}==${final_diel}" then "jump SELF break"
+
+label continue
+variable diel equal ${diel}-1.0
+dielectric ${diel}
+run ${chargingSteps}
+jump SELF chargingLoop
+
+label break
+
+write_data ${data_dir}/fullyCharged.data
+write_restart ${bin_dir}/fullyCharged.bin
+
+run 2000 
+write_data ${data_dir}/startEqui.data
+write_restart ${bin_dir}/startEqui.bin
+
+undump mydumpCharging
+
+####################################
+#### EQUILIBRATION
+####################################
+unfix nvt1
+fix stabilize all momentum 1 linear 1 1 1
+
+reset_timestep 0
+
+fix npt1 all npt temp ${Temp} ${Temp} ${Tdamping} x ${PressAnn} ${PressAnn} ${Pdamping} y ${PressAnn} ${PressAnn} ${Pdamping} couple xy
+run ${runtime}
+unfix npt1
+write_restart ${bin_dir}/PressAnn1.bin
+
+fix npt2 all npt temp ${Temp} ${Temp2} ${Tdamping} x ${PressAnn} ${PressEq} ${Pdamping} y ${PressAnn} ${PressEq} ${Pdamping} couple xy
+run ${runtime}
+unfix npt2
+write_restart ${bin_dir}/PressAnn2.bin
+
+fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy 
+run ${runtime}
+write_restart ${bin_dir}/PressEq.bin
+
+reset_timestep 0
+restart 1000 ${bin_dir}/FinalAnneal1.bin ${bin_dir}/FinalAnneal2.bin
+
+dump mydumpEqui all custom 1000 ${trj_dir}/Anneal.dat id type mol xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run 50000 upto
+
+write_data ${data_dir}/SlabEq.data
+write_restart ${bin_dir}/SlabEq.bin
+
+print "Complex Coacervate slab is equilibrated" file ${JOBDIR}/slabEquil.done
