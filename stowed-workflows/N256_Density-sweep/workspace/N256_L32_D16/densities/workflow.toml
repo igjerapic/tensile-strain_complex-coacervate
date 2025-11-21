@@ -39,6 +39,3 @@ conda activate bsa
 output_file_path = "slurm_outs"
 
 
-[[action]]
-name = "test"
-command = "./test.sh {directory}"
