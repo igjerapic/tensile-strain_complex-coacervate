@@ -2,10 +2,15 @@ units         lj
 atom_style    full
 dimension     3
 
+pair_style lj/cut/coul/cut 2.5 10.0 
+bond_style fene 
+
 # workspace directrories
 variable data_dir string "${JOBDIR}/lmp_data"
 variable bin_dir string "${JOBDIR}/lmp_bin"
 variable trj_dir string "${JOBDIR}/lmp_trj"
+
+processors * * 1
 
 read_data start/packed.data
 change_box all boundary p p f 
@@ -15,7 +20,7 @@ include ${SETTINGS_FILE}
 ####################################
 #### REPULSIVE SQUEEZE  
 ####################################
-pair_coeff * * 1.0 1.0 1.12246 10.0
+pair_coeff * * 1.0 1.0 1.12246 5.0
 dielectric 10.0 
 
 variable wallL equal ramp(zlo,zlo)
@@ -35,13 +40,16 @@ dump_modify mydumpSqeeze1 sort id
 reset_timestep 0
 run ${runtimeShort}
 
-unfix  fix shrink1
+unfix shrink1
 undump mydumpSqeeze1
 
 ####################################
 #### ATTRACTIVE SQUEEZE  
 ####################################
 pair_coeff    * * 1.0 1.0 2.5 10.0
+
+comm_style tiled 
+balance 0.9 rcb weight neigh 0.8
 
 fix shrink2 all deform 1 z final -${thick2} ${thick2}
 
@@ -122,3 +130,4 @@ write_data ${data_dir}/SlabEq.data
 write_restart ${bin_dir}/SlabEq.bin
 
 print "Complex Coacervate slab is equilibrated" file ${JOBDIR}/slabEquil.done
+
