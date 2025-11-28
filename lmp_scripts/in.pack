@@ -2,9 +2,13 @@
 # VARIABLES
 ####################################
 
+# workspace directrories
+variable data_dir string "${JOBDIR}/lmp_data"
+
 # variables from input 
 variable num_chains equal ${N}
 variable chain_length equal ${L}
+variable mol_file string ${TOPO_FILE}
 
 
 # chain properties 
@@ -22,11 +26,6 @@ variable Lxy equal 2*${chain_length}
 variable zbox equal ${Lz}/2.0
 variable zpack equal ${Lz_pack}/2.0
 variable boxside equal ${L}/2.0
-####################################
-### MOLECULE FILE
-####################################
-variable mol_file string ${TOPO_FILE}
-variable finalfile string 'packed.data'
 
 ####################################
 ### PACKING CHAINS 
@@ -44,19 +43,20 @@ molecule mol1 ${mol_file}
 
 # create and label chains 
 create_atoms  0   random    ${num_chains}   12345   packbox    mol mol1 12553 #remap no
-group positive type 1
+group pos type 1
 create_atoms  0   random    ${num_chains}   23456   packbox    mol mol1 12553 #remap no
-group negative subtract all positive
+group neg subtract all pos
 
 # create and label salt ions
 # create_atoms  3   random    ${num_beads}    34567   packbox    
 
 # set the type of the atoms 
-set group positive type 1 
-set group negative type 2 
+set group pos type 1 
+set group neg type 2 
 
 mass    * 1.0
 
-change_box all boundary p p p 
-write_data   ${finalfile} nofix nocoeff 
+change_box all boundary p p f 
+write_data   ${data_dir}/packed.data nofix nocoeff 
+print "Polymers packed" file ${JOBDIR}/${ACTION}.done
 

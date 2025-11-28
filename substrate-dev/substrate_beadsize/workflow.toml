@@ -36,12 +36,12 @@ processes.per_submission = 1
 name = "subEquil"
 previous_actions = ["makedirs", "tmp"]
 products = ["subEquil.done"]
-launchers = ["mpi"]
+launchers = ["mpi" , "openmp"]
 [action.group]
 maximum_size = 1
 [action.resources]
-processes.per_submission = 1
-# walltime.per_submission = "15:00:00" # comment out when running locally (none cluster)
+processes.per_submission = 8
+walltime.per_submission = "15:00:00" # comment out when running locally (none cluster)
 
 
 

@@ -5,7 +5,7 @@ value_file = "signac_statepoint.json"
 [default.action]
 command = "python actions.py --action $ACTION_NAME {directories}"
 [default.action.resources]
-processes.per_submission = 8
+processes.per_submission = 4
 memory_per_cpu_mb = 512
 [default.action.submit_options.habrok]
 setup = """
@@ -32,7 +32,7 @@ launchers = ["mpi"]
 [action.group]
 maximum_size = 1
 [action.resources]
-walltime.per_submission = "4:00:00"
+walltime.per_submission = "8:00:00"
 
 [[action]]
 name = "subEquil"

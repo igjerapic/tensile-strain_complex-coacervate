@@ -11,7 +11,6 @@ epsilon_PS = 3.0
 # parameter space
 sub_beadsize = [0.8, 1.0]
 sub_n_layers = [1, 2]
-
 for layers in sub_n_layers:
     for sigma in sub_beadsize:
         sp = {'epLJ': epsilon_PS, 'L': poly_length, 'D' : slab_thickness, 'T': 1.0, 'N': n_polymers, 

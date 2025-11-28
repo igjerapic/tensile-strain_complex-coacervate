@@ -15,7 +15,7 @@ def subEquil(*jobs):
 
         inscript = project.path + f"/lmp_scripts/in.{name}" 
         settingsfile = project.path + "/lmp_scripts/settings.lmp" 
-        cmd = f"lmp -i {inscript} -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} {lmp_vars}"
+        cmd = f"lmp -sf omp -pk omp 2 -i {inscript} -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} {lmp_vars}"
         # cmd = f"lmp -i {inscript}  -sc {outPattern}.outlmp -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} {lmp_vars}"
         subprocess.run(cmd, shell=True, check = True)
 
@@ -32,3 +32,4 @@ if __name__ == '__main__':
 
     # Call the action
     globals()[args.action](*jobs)
+    

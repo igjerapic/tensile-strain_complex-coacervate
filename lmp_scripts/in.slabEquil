@@ -2,7 +2,12 @@ units         lj
 atom_style    full
 dimension     3
 
-pair_style lj/cut/coul/cut 2.5 10.0 
+# Determine pair interactions based of charged
+if "${isCharged} == True" then &
+  "pair_style lj/cut/coul/cut 2.5 10.0" &
+else &
+  "pair_style lj/cut 2.5" 
+
 bond_style fene 
 
 # workspace directrories
@@ -10,9 +15,17 @@ variable data_dir string "${JOBDIR}/lmp_data"
 variable bin_dir string "${JOBDIR}/lmp_bin"
 variable trj_dir string "${JOBDIR}/lmp_trj"
 
-processors * * 1
+processors * * 1 # system is confined in Z direction, better to have only one processor there
+# determining where to start from 
+variable restartFile string  ${bin_dir}/FinalAnneal2.bin
+variable restartFile_exists equal is_file(${restartFile})
+if ${restartFile_exists} then & 
+  "read_restart ${restartFile}" &
+  "change_box all boundary p p f" &
+  "include ${SETTINGS_FILE}" &
+  "jump SELF FINAL_ANNEAL" 
 
-read_data start/packed.data
+read_data ${data_dir}/packed.data
 change_box all boundary p p f 
 
 include ${SETTINGS_FILE}
@@ -20,12 +33,23 @@ include ${SETTINGS_FILE}
 ####################################
 #### REPULSIVE SQUEEZE  
 ####################################
-pair_coeff * * 1.0 1.0 1.12246 5.0
-dielectric 10.0 
+if "${isCharged} == True" then &
+  "pair_coeff * * 1.0 1.0 1.12246 10.0" &
+  "dielectric 10.0" &
+else &
+  "pair_coeff * * 1.0 1.0 1.12246"
 
 variable wallL equal ramp(zlo,zlo)
 variable wallH equal ramp(zhi,zhi)
-fix walls all wall/lj93 zlo v_wallL ${epsilon_PS} 1.0 2.5 zhi v_wallH ${epsilon_PS} 1.0 2.5
+
+### DIFFERENT WALL POTENTIALS: LJ93, LJ126, LJ1043 ###
+if "${wallPot} == LJ93" then & 
+  "fix walls all wall/lj93 zlo v_wallL ${epsilon_PS} ${subSigma} 2.5 zhi v_wallH ${epsilon_PS} ${subSigma} 2.5" & 
+elif "${wallPot} == LJ126" &
+  "fix walls all wall/lj126 zlo v_wallL ${epsilon_PS} ${subSigma} 2.5 zhi v_wallH ${epsilon_PS} ${subSigma} 2.5" & 
+else &
+  "fix walls all wall/lj1043 zlo v_wallL ${epsilon_PS} ${subSigma} 2.5 zhi v_wallH ${epsilon_PS} ${subSigma} 2.5"  
+
 fix_modify walls energy yes
 
 velocity all create ${Temp} ${velSeed}
@@ -44,9 +68,12 @@ unfix shrink1
 undump mydumpSqeeze1
 
 ####################################
-#### ATTRACTIVE SQUEEZE  
+#### ATTRACTIVE SQUEEZE  k
 ####################################
-pair_coeff    * * 1.0 1.0 2.5 10.0
+if "${isCharged} == True" then &
+  "pair_coeff    * * 1.0 1.0 2.5 10.0" &
+else &
+  "pair_coeff    * * 1.0 1.0 2.5" 
 
 comm_style tiled 
 balance 0.9 rcb weight neigh 0.8
@@ -68,6 +95,9 @@ undump mydumpSqeeze2
 ####################################
 #### START CHARGING
 ####################################
+if "${isCharged} == False" then &
+  "jump SELF EQUILIBRATION"
+
 dump mydumpCharging all custom 200 ${trj_dir}/Charging.dat id type mol xu yu zu vx vy vz 
 dump_modify mydumpCharging sort id 
 
@@ -99,6 +129,8 @@ undump mydumpCharging
 ####################################
 #### EQUILIBRATION
 ####################################
+label EQUILIBRATION
+
 unfix nvt1
 fix stabilize all momentum 1 linear 1 1 1
 
@@ -119,6 +151,11 @@ run ${runtime}
 write_restart ${bin_dir}/PressEq.bin
 
 reset_timestep 0
+# label FINAL_ANNEAL
+# if ${restartFile_exists} then &
+#   "fix stabilize all momentum 1 linear 1 1 1 " &
+#   "fix npt3 all npt temp ${Temp2} ${Temp2} ${Tdamping} x ${PressEq} ${PressEq} ${Pdamping} y ${PressEq} ${PressEq} ${Pdamping} couple xy" 
+
 restart 1000 ${bin_dir}/FinalAnneal1.bin ${bin_dir}/FinalAnneal2.bin
 
 dump mydumpEqui all custom 1000 ${trj_dir}/Anneal.dat id type mol xu yu zu vx vy vz
@@ -129,5 +166,5 @@ run 50000 upto
 write_data ${data_dir}/SlabEq.data
 write_restart ${bin_dir}/SlabEq.bin
 
-print "Complex Coacervate slab is equilibrated" file ${JOBDIR}/slabEquil.done
+print "Complex Coacervate slab is equilibrated" file ${JOBDIR}/${ACTION}.done
 

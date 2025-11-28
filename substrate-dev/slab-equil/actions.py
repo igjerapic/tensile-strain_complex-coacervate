@@ -21,13 +21,22 @@ def slabEquil(*jobs):
         sp = job.sp
         lmp_vars = " ".join(f"-v {key} {val}" for key, val in sp.items())
         name="slabEquil"
-        outPattern = job.path + '/' + name
+        outPattern = job.path + '/' + name 
+        # check if process finished
+        if job.isfile(outPattern + ".done") : 
+            print(outPattern + ".done")
+            print("Job is finished")
+            continue 
+
+        if job.fn(outPattern + ".outlmp"): 
+            outPattern += "_restart"
 
         inscript = project.path + f"/lmp_scripts/in.{name}" 
         settingsfile = project.path + "/lmp_scripts/settings.lmp" 
         # cmd = f"lmp -i {inscript} -sc {outPattern}.outlmp -l {outPattern}.loglmp {lmp_vars}"
         cmd = f"lmp -i {inscript}  -sc {outPattern}.outlmp -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} {lmp_vars}"
         subprocess.run(cmd, shell=True, check = True)
+
 if __name__ == '__main__':
     # Parse the command line arguments: python action.py --action <ACTION> [DIRECTORIES]
     parser = argparse.ArgumentParser()
@@ -41,3 +50,4 @@ if __name__ == '__main__':
 
     # Call the action
     globals()[args.action](*jobs)
+

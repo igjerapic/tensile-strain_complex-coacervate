@@ -5,15 +5,16 @@ variable data_dir string "${JOBDIR}/lmp_data"
 variable bin_dir string "${JOBDIR}/lmp_bin"
 variable trj_dir string "${JOBDIR}/lmp_trj"
 
-# variable start_bin string "${bin_dir}/SlabEq.bin"
-# read_restart lmp_bin/SlabEq.bin
-
 units lj 
 atom_style    full
 dimension     3
 boundary p p f
 
-pair_style lj/cut/coul/cut 2.5 10.0 
+# Determine pair interactions based of charged
+if "${isCharged} == True" then &
+  "pair_style lj/cut/coul/cut 2.5 10.0" &
+else &
+  "pair_style lj/cut 2.5" 
 bond_style fene 
 
 processors * * 1
@@ -27,17 +28,30 @@ dielectric 1.0
 variable epsilon_subs equal ${epLJ}
 variable sigma_sub equal ${subSigma}
 variable num_layers equal ${subLayers}
+variable Temp2 equal ${T}
 
-pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0
-pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0
-pair_coeff    3 3 0.0 1.0 2.5 10.0 # substrate self-interaction
-pair_coeff    4 * 0.0 1.0 2.5 10.0 # substrate self-interaction
-pair_coeff    5 * 0.0 1.0 2.5 10.0 # substrate self-interaction
+
+# Adjust neighbors noting that subs do not interact with each other
+neigh_modify exclude type 3 3 one 8000 every 1 
+
+# Type 1: positive, Type 2: negative, Type 3: neutral substrate, Type 4,5: to be determined (maybe salt or charged substrates)
+if "${isCharged} == True" then &
+  "pair_coeff    1*2 1*2 1.0 1.0 2.5 10.0" &
+  "pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5 10.0" &
+  "pair_coeff    3 3 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    4 * 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    5 * 0.0 1.0 2.5 10.0" &
+else &
+  "pair_coeff    1*2 1*2 1.0 1.0 2.5" &
+  "pair_coeff    1*2 3 ${epsilon_subs} 1.0 2.5" &
+  "pair_coeff    3 3 0.0 1.0 2.5" &  
+  "pair_coeff    4 * 0.0 1.0 2.5" &  
+  "pair_coeff    5 * 0.0 1.0 2.5"   
 
 ####################################
 #### ADD SUBSTRATES
 ####################################
-# lattice parameters for substrates 
+# lattice constants for substrates 
 variable spacing equal 2^(1/6)*${sigma_sub} # energy min of LJ potential used as spacing
 variable diameter equal ${spacing}/sqrt(2) # diameter of 'balls' for FCC packing 
 variable rhostar equal sqrt(2)*(${diameter}^(-3.0)) # reduced density of our unit cell in LJ units
@@ -50,7 +64,6 @@ variable zhiOG equal ${zhiNow}
 variable zloOG equal ${zloNow}
 variable planeSpacing equal ${spacing}/2
 variable elongate equal ${diameter}/2+(${num_layers}-1)*${planeSpacing}
-variable elongate equal ${num_layers}*${planeSpacing}
 
 change_box all z delta -${elongate} ${elongate}
 
@@ -68,60 +81,58 @@ group top_sub region topsubstrate
 group bot_sub region botsubstrate
 group subs union top_sub bot_sub
 
-variable top_subZ equal xcm(top_sub,z)
-variable offset equal (${num_layers}-1)*${spacing}/4
-variable deltaz equal abs(${top_subZ}-${zhiOG})-${offset}
 
-displace_atoms top_sub move 0.0 0.0 -${deltaz} 
-displace_atoms bot_sub move 0.0 0.0 ${deltaz} 
-
-# variable zdelta equal 0.0
-# displace_atoms top_sub move 0.0 0.0 -${zdelta}
-# displace_atoms bot_sub move 0.0 0.0 ${zdelta}
-# if "${num_layers} == 1" then &
-#   "variable zdelta equal 0" &
-#   "variable zdelta equal 0" &
-#   "variable zup equal ${zhiOG}+${zdelta}" &
-#   "variable zbot equal ${zloOG}-${zdelta}" &
-#   "set group top_sub z ${zup} " &
-#   "set group bot_sub z ${zbot}" &
+if "${num_layers} == 1" then &
+  "variable zdelta equal 0" &
+  "variable zup equal ${zhiOG}+${zdelta}" &
+  "variable zbot equal ${zloOG}-${zdelta}" &
+  "set group top_sub z ${zup} " &
+  "set group bot_sub z ${zbot}" &
+else &
+  "variable top_subZ equal xcm(top_sub,z)" & 
+  "variable deltaz equal abs(zhi-${zhiOG})-${num_layers}*${planeSpacing}" & 
+  "variable deltaz equal ${zhiNow}-${zhiOG}-((${num_layers}-1)*${spacing}/4)" & 
+  "variable deltaz equal ${top_subZ}-${zhiOG}-((${num_layers}-1)*${spacing}/4)" & 
+  "variable deltaz equal 0" & 
+  "displace_atoms top_sub move 0.0 0.0 -${deltaz} " & 
+  "displace_atoms bot_sub move 0.0 0.0 ${deltaz} " 
 
 write_data ${data_dir}/startEquilSubs.data
 
-# ####################################
-# #### DETERMINE STRESS ON CHAINS
-# ####################################
-# compute stressPoly chains stress/atom chainTemp
-# compute pChainxx chains reduce sum c_stressPoly[1] 
-# compute pChainyy chains reduce sum c_stressPoly[2] 
-# compute pChainzz chains reduce sum c_stressPoly[3] 
-# variable pChainxxv equal -c_pChainxx/v_chainVol
-# variable pChainyyv equal -c_pChainyy/v_chainVol
-# variable pChainzzv equal -c_pChainzz/v_chainVol
-# variable pChain equal (v_pChainxxv+v_pChainyyv+v_pChainzzv)/3
-# 
-# variable pxxChains equal -(c_pSlab[1])/(v_chainVol)
-# variable pyyChains equal -(c_pSlab[2])/(v_chainVol)
-# variable pzzChains equal -(c_pSlab[3])/(v_chainVol)
-# variable pTotChains equal (v_pxxChains+v_pyyChains+v_pzzChains)/3
-# thermo_style custom step time c_chainTemp epair ecoul evdwl ke etotal enthalpy vol v_chainVol density v_slabDensity press v_pTotChains v_pChain pxx v_pxxChains v_pChainxxv pyy v_pyyChains v_pChainyyv pzz v_pzzChains v_pChainzzv
-# thermo_modify line yaml format none
-# ####################################
-# #### EQUILIBRATE CONFINED SYSTEM
-# ####################################
-# 
-# # run under NVT 
-# fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping}
-# 
-# dump mydumpSubs1 all custom 500 ${trj_dir}/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
-# dump_modify mydumpSubs1 sort id
-# 
-# restart 500 ${bin_dir}/restartSubsNVT1.bin ${bin_dir}/restartSubsNVT2.bin
-# reset_timestep 0
-# run 250000 upto
-# 
-# write_data ${data_dir}/equilSubstrates.bin
-# write_restart ${bin_dir}/equilSubstrates.bin
-# 
-# print "Done with sub equilibration" file ${JOBDIR}/subEquil.done
-# 
+####################################
+#### DETERMINE STRESS ON CHAINS
+####################################
+compute stressPoly chains stress/atom chainTemp
+compute pChainxx chains reduce sum c_stressPoly[1] 
+compute pChainyy chains reduce sum c_stressPoly[2] 
+compute pChainzz chains reduce sum c_stressPoly[3] 
+variable pChainxxv equal -c_pChainxx/v_chainVol
+variable pChainyyv equal -c_pChainyy/v_chainVol
+variable pChainzzv equal -c_pChainzz/v_chainVol
+variable pChain equal (v_pChainxxv+v_pChainyyv+v_pChainzzv)/3
+
+variable pxxChains equal -(c_pSlab[1])/(v_chainVol)
+variable pyyChains equal -(c_pSlab[2])/(v_chainVol)
+variable pzzChains equal -(c_pSlab[3])/(v_chainVol)
+variable pTotChains equal (v_pxxChains+v_pyyChains+v_pzzChains)/3
+thermo_style custom step time c_chainTemp epair ecoul evdwl ke etotal enthalpy vol v_chainVol density v_slabDensity press v_pTotChains v_pChain pxx v_pxxChains v_pChainxxv pyy v_pyyChains v_pChainyyv pzz v_pzzChains v_pChainzzv
+thermo_modify line yaml format none
+####################################
+#### EQUILIBRATE CONFINED SYSTEM
+####################################
+
+# run under NVT 
+fix nvt1 chains nvt temp ${Temp2} ${Temp2} ${Tdamping}
+
+dump mydumpSubs1 all custom 2500 ${trj_dir}/equilSubstratesNVT.dat id type mol xu yu zu vx vy vz c_stressA[1] c_stressA[2] c_stressA[3]
+dump_modify mydumpSubs1 sort id
+
+restart 2500 ${bin_dir}/restartSubsNVT1.bin ${bin_dir}/restartSubsNVT2.bin
+reset_timestep 0
+run 250000 upto
+
+write_data ${data_dir}/equilSubstrates.data
+write_restart ${bin_dir}/equilSubstrates.bin
+
+print "Done with sub equilibration" file ${JOBDIR}/${ACTION}.done
+ 

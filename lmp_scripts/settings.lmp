@@ -6,24 +6,22 @@
 neighbor 0.8 bin
 neigh_modify one 8000 
 
-###################################
-####  GROUPS
-####################################
-
-group  pos_chains  type 1
-group  neg_chains  type 2
-group  chains      type 1 2 
-
 ####################################
 ####  POTENTIALS
 ####################################
 bond_style    fene
 bond_coeff    1 30.0 1.5 1.0 1.0  # taken from doi:10.1021/acsmacrolett.5c00323 
-special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper
 
+group  pos  type 1
+group  neg  type 2
+group  chains      type 1 2 
 
-set group pos_chains charge 1.0 
-set group neg_chains charge -1.0
+if "${isCharged} == True" then &
+  "set group pos charge 1.0 " &
+  "set group neg charge -1.0" &
+  "special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper" &
+else &
+  "special_bonds lj 0.0 1.0 1.0"
 
 ####################################
 ####  VARIABLES DEFINITION
@@ -31,7 +29,7 @@ set group neg_chains charge -1.0
 # variables from input
 variable epsilon_PS equal ${epLJ}
 variable thickFinal equal ${D}
-variable Temp2 equal {T}
+variable Temp2 equal ${T}
 
 # Equilibration variables
 variable Temp equal 1.5

@@ -1,5 +1,6 @@
 # data files from simulation
 workspace
+view
 .row
 .signac
 
@@ -7,6 +8,8 @@ workspace
 !stowed-workspace/*
 
 substrate-dev/*/lmp_scripts
+topologies
+tmp*
 #
 
 lmp_data/

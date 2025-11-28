@@ -1,0 +1,91 @@
+[workspace]
+value_file = "signac_statepoint.json"
+
+# default settings for the actions
+[default.action]
+command = "python actions.py --action $ACTION_NAME {directories}"
+
+[default.action.resources]
+processes.per_submission = 8
+threads_per_process = 4
+memory_per_cpu_mb = 512
+
+[default.action.submit_options.habrok]
+setup = """
+module load LAMMPS/23Jun2022-foss-2021b-kokkos
+module unload SciPy-bundle/2021.10-foss-2021b
+module load Anaconda3/2024.02-1
+conda activate bsa
+"""
+output_file_path = "slurm_outs"
+
+[[action]]
+name = "makedirs"
+command = "(cd workspace/{directory} && mkdir lmp_bin lmp_data lmp_trj)"
+products = ["lmp_data", "lmp_bin", "lmp_trj"]
+[action.resources]
+processes.per_submission = 1
+[[action]]
+name = "makefigdir"
+command = "(cd workspace/{directory} && mkdir figs)"
+products = ["figs"]
+[action.resources]
+processes.per_submission = 1
+
+[[action]]
+name = "pack"
+previous_actions = ["makedirs"]
+products = ["pack.done"] 
+[action.group]
+maximum_size = 1
+[action.resources]
+processes.per_submission = 1
+threads_per_process = 1
+
+### SLAB EQUILIBRATION ###
+[[action]]
+name = "slabEquil"
+previous_actions = ["pack"]
+products = ["slabEquil.done"]
+launchers = ["mpi"]
+[action.resources]
+walltime.per_submission = "8:00:00"
+[action.group]
+maximum_size = 1
+[[action.group.include]]
+condition = ["/isCharged", "==", "True"]
+
+[[action]]
+from = "slabEquil"
+[action.resources]
+walltime.per_submission = "0:30:00"
+processes.per_submission = 4
+threads_per_process = 2
+memory_per_cpu_mb = 512
+[[action.group.include]]
+condition = ["/isCharged", "==", "False"]
+
+
+### SUB EQUILIBRATION ###
+[[action]]
+name = "subEquil"
+previous_actions = ["slabEquil"]
+products = ["subEquil.done"]
+launchers = ["mpi"]
+[action.group]
+maximum_size = 1
+[action.resources]
+walltime.per_submission = "4:00:00" # comment out when running locally (none cluster)
+[[action.group.include]]
+condition = ["/isCharged", "==", "True"]
+
+[[action]]
+from = "subEquil"
+[action.resources]
+processes.per_submission = 4
+threads_per_process = 2
+memory_per_cpu_mb = 512
+walltime.per_submission = "00:30:00"
+[[action.group.include]]
+condition = ["/isCharged", "==", "False"]
+
