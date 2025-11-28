@@ -43,7 +43,7 @@ previous_actions = ["pack"]
 products = ["equil.done"]
 launchers = ["mpi"]
 [action.resources]
-walltime.per_submission = "16:00:00"
+walltime.per_submission = "8:00:00"
 [action.group]
 maximum_size = 1
 [[action.group.include]]
@@ -52,7 +52,7 @@ condition = ["/charge", "==", "charged"]
 [[action]]
 from = "equil"
 [action.resources]
-walltime.per_submission = "8:00:00"
+walltime.per_submission = "2:00:00"
 processes.per_submission = 4
 threads_per_process = 2
 memory_per_cpu_mb = 512
