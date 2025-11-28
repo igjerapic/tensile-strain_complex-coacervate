@@ -251,8 +251,7 @@ balance 0.9 shift z 10 1.0 weight neigh 0.8
 fix stabilize all momentum 1 linear 1 1 1
 
 velocity top_sub set 0.0 0.0 0.0 
-fix rigid1 top_sub rigid/nve single 
-fix quasiNPT top_sub aveforce 0 0 NULL  
+fix rigid1 top_sub rigid/nve single force 1 off off on torque 1 off off off
 
 fix nvt2 chains nvt temp ${Temp} ${Temp} ${Tdamping}
 fix_modify nvt2 temp chainTemp

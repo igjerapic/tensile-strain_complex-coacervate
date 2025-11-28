@@ -34,8 +34,8 @@ def equil(*jobs):
         inscript = project.path + f"/lmp_scripts/in.{action}" 
         settingsfile = project.path + "/lmp_scripts/settings.lmp" 
         lmp_vars = " ".join(f"-v {key} {val}" for key, val in job.sp.items())
-        cmd = f"lmp -sf omp -pk omp $ACTION_THREADS_PER_PROCESS -i {inscript} -sc {outPattern}.outlmp -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} -v ACTION {action} {lmp_vars}"
-        # cmd = f"lmp -sf omp -pk omp $ACTION_THREADS_PER_PROCESS -i {inscript} -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} -v ACTION {action} {lmp_vars}"
+        # cmd = f"lmp -sf omp -pk omp $ACTION_THREADS_PER_PROCESS -i {inscript} -sc {outPattern}.outlmp -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} -v ACTION {action} {lmp_vars}"
+        cmd = f"lmp -sf omp -pk omp $ACTION_THREADS_PER_PROCESS -i {inscript} -l {outPattern}.loglmp -v JOBDIR {job.path} -v SETTINGS_FILE {settingsfile} -v ACTION {action} {lmp_vars}"
 
         # run LAMMPS command
         subprocess.run(cmd, shell=True, check = True)
