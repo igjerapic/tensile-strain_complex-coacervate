@@ -1,0 +1,249 @@
+units         lj
+atom_style    full
+dimension     3
+
+# Determine pair interactions based of charged
+if "${charge} == charged" then &
+  "pair_style lj/cut/coul/cut 2.5 10.0" &
+else &
+  "pair_style lj/cut 2.5" 
+
+bond_style fene 
+
+# workspace directrories
+variable data_dir string "${JOBDIR}/lmp_data"
+variable bin_dir string "${JOBDIR}/lmp_bin"
+variable trj_dir string "${JOBDIR}/lmp_trj"
+
+processors * * 1 # system is confined in Z direction, better to have only one processor there
+
+read_data ${data_dir}/packed.data
+change_box all boundary p p f 
+
+include ${SETTINGS_FILE}
+
+variable lj_cut1 equal 1.12246
+variable lj_cut2 equal 2.5
+####################################
+#### REPULSIVE SQUEEZE XY DIRECTIONS
+####################################
+# Type 1: positive, Type 2: negative, Type 3: neutral substrate, Type 4,5: to be determined (maybe salt or charged substrates)
+if "${charge} == charged" then &
+  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut1} 10.0" &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut1} 10.0" &
+  "pair_coeff    3 3 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    4 * 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    5 * 0.0 1.0 2.5 10.0" &
+else &
+  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut1}" &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut1}" &
+  "pair_coeff    3 3 0.0 1.0 2.5" &  
+  "pair_coeff    4 * 0.0 1.0 2.5" &  
+  "pair_coeff    5 * 0.0 1.0 2.5"   
+
+variable wallL equal ramp(zlo,zlo)
+variable wallH equal ramp(zhi,zhi)
+fix walls chains wall/lj93 zlo v_wallL ${epsilon_PS} ${subSigma} ${lj_cut1} zhi v_wallH ${epsilon_PS} ${subSigma} ${lj_cut1}
+fix_modify walls energy yes
+
+velocity chains create ${Temp} ${velSeed}
+minimize    0.0 1.0e-8 1000 100000 
+
+fix nvt1 chains nvt temp ${Temp} ${Temp} ${Tdamping}
+fix_modify nvt1 temp chainTemp
+
+fix shrink1 chains deform 1 x final -${Lbox} ${Lbox} y final -${Lbox} ${Lbox} 
+
+dump mydumpSqeeze1 all custom 200 ${trj_dir}/Squeez1.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze1 sort id 
+
+reset_timestep 0
+run 10000
+
+unfix shrink1
+unfix walls
+undump mydumpSqeeze1
+
+####################################
+#### ADD SUBSTRATES
+####################################
+# lattice constants for substrates 
+variable spacing equal 2^(1/6)*${sigma_sub} # energy min of LJ potential used as spacing
+variable diameter equal ${spacing}/sqrt(2) # diameter of 'balls' for FCC packing 
+variable rhostar equal sqrt(2)*(${diameter}^(-3.0)) # reduced density of our unit cell in LJ units
+lattice  fcc ${rhostar} origin 0.0 0.0 0.0 
+
+# make space for substrate layers
+variable zhiNow equal zhi
+variable zloNow equal zlo
+variable zhiOG equal ${zhiNow}
+variable zloOG equal ${zloNow}
+variable planeSpacing equal ${spacing}/2
+variable elongate equal ${diameter}/2+(${num_layers}-1)*${planeSpacing}
+
+change_box all z delta -${elongate} ${elongate}
+
+variable topSubstrate equal ${zhiOG}/${spacing}
+variable bottomSubstrate equal ${zloOG}/${spacing}
+
+# create substrates and group atoms
+region topsubstrate plane 0 0 ${topSubstrate} 0 0 1
+region botsubstrate plane 0 0 ${bottomSubstrate} 0 0 -1
+
+region substrate union 2 topsubstrate botsubstrate
+create_atoms 3 region substrate
+
+group top_sub region topsubstrate
+group bot_sub region botsubstrate
+group subs union top_sub bot_sub
+
+if "${num_layers} == 1" then &
+  "variable zdelta equal 0" &
+  "variable zup equal ${zhiOG}+${zdelta}" &
+  "variable zbot equal ${zloOG}-${zdelta}" &
+  "set group top_sub z ${zup} " &
+  "set group bot_sub z ${zbot}" &
+else &
+  "variable top_subZ equal xcm(top_sub,z)" & 
+  "variable deltaz equal abs(zhi-${zhiOG})-${num_layers}*${planeSpacing}" & 
+  "variable deltaz equal ${zhiNow}-${zhiOG}-((${num_layers}-1)*${spacing}/4)" & 
+  "variable deltaz equal ${top_subZ}-${zhiOG}-((${num_layers}-1)*${spacing}/4)" & 
+  "variable deltaz equal 0" & 
+  "displace_atoms top_sub move 0.0 0.0 -${deltaz} " & 
+  "displace_atoms bot_sub move 0.0 0.0 ${deltaz} " 
+
+write_data ${data_dir}/addedSubs.data
+
+####################################
+#### REPULSIVE SQUEEZE  
+####################################
+comm_style tiled 
+balance 0.9 shift z 10 1.0 weight neigh 0.8 
+fix balance1 all balance 100 0.9 shift z 10 1.0 
+
+fix shrink2 all deform 1 z final -${thick1} ${thick1} remap x
+
+dump mydumpSqeeze2 all custom 200 ${trj_dir}/Squeez2.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze2 sort id 
+
+reset_timestep 0
+run 30000
+# run ${runtimeShort}
+
+write_data ${data_dir}/startCharging.data
+write_restart ${bin_dir}/startCharging.bin
+
+unfix shrink2
+undump mydumpSqeeze2
+
+####################################
+#### START CHARGING
+####################################
+# Type 1: positive, Type 2: negative, Type 3: neutral substrate, Type 4,5: to be determined (maybe salt or charged substrates)
+if "${charge} == charged" then &
+  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2} 10.0" &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut1} 10.0" &
+  "pair_coeff    3 3 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    4 * 0.0 1.0 2.5 10.0" & 
+  "pair_coeff    5 * 0.0 1.0 2.5 10.0" &
+else &
+  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2}" &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut1}" &
+  "pair_coeff    3 3 0.0 1.0 2.5" &  
+  "pair_coeff    4 * 0.0 1.0 2.5" &  
+  "pair_coeff    5 * 0.0 1.0 2.5" &
+  "jump SELF SQUEEZE3"
+dump mydumpCharging all custom 200 ${trj_dir}/Charging.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpCharging sort id 
+
+#### RAMP UP THE INTERACTIONS IN LOOP
+variable chargingSteps equal 2000
+variable diel equal 10.0 
+variable final_diel equal 1.0 
+reset_timestep 0 
+label chargingLoop
+if "${diel}==${final_diel}" then "jump SELF break"
+
+label continue
+variable diel equal ${diel}-1.0
+dielectric ${diel}
+run ${chargingSteps}
+jump SELF chargingLoop
+
+label break
+
+write_data ${data_dir}/fullyCharged.data
+write_restart ${bin_dir}/fullyCharged.bin
+
+undump mydumpCharging
+
+####################################
+#### FINAL SQUEEZE
+####################################
+label SQUEEZE3
+if "${charge} == charged" then &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2} 10.0" &
+else &
+  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2}"
+balance 0.9 shift z 10 1.0 weight neigh 0.8 
+
+fix shrink3 all deform 1 z final -${thick2} ${thick2} remap x
+
+dump mydumpSqeeze3 all custom 100 ${trj_dir}/Squeez3.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpSqeeze3 sort id 
+
+reset_timestep 0
+run 10000
+
+write_data ${data_dir}/Squeez3.data
+write_restart ${bin_dir}/Squeez3.bin
+
+unfix shrink3
+unfix balance1
+undump mydumpSqeeze3
+
+####################################
+#### QUICK RIGID RUN 
+####################################
+
+balance 0.9 shift z 10 1.0 weight neigh 0.8 
+dump mydumpRigid all custom 200 ${trj_dir}/FrozenSub.dat id type mol xu yu zu vx vy vz 
+dump_modify mydumpRigid sort id 
+reset_timestep 0 
+run 10000 
+
+variable elongate2 equal ${Lz}*2
+change_box all z delta 0 ${elongate2}
+write_data ${data_dir}/startEqui.data
+write_restart ${bin_dir}/startEqui.bin
+
+unfix nvt1
+undump mydumpRigid
+
+####################################
+#### EQUILIBRATION
+####################################
+balance 0.9 shift z 10 1.0 weight neigh 0.8 
+fix stabilize all momentum 1 linear 1 1 1
+
+velocity top_sub set 0.0 0.0 0.0 
+fix rigid1 top_sub rigid/nve single 
+fix quasiNPT top_sub setforce 0 0 NULL  
+
+fix nvt2 chains nvt temp ${Temp} ${Temp} ${Tdamping}
+fix_modify nvt2 temp chainTemp
+
+reset_timestep 0
+restart 5000 ${bin_dir}/equil1.bin ${bin_dir}/equil2.bin
+
+dump mydumpEqui all custom 5000 ${trj_dir}/Equil.dat id type mol xu yu zu vx vy vz
+dump_modify mydumpEqui sort id
+
+run 500000 upto
+
+change_box all boundary p p s
+write_data ${data_dir}/equil.data
+write_restart ${bin_dir}/equil.bin
+
+print "Complex Coacervate is equilibrated" file ${JOBDIR}/${ACTION}.done
+

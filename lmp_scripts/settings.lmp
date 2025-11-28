@@ -4,7 +4,7 @@
 ###################################
 
 neighbor 0.8 bin
-neigh_modify one 8000 
+neigh_modify exclude type 3 3 one 8000 every 1 
 
 ####################################
 ####  POTENTIALS
@@ -16,7 +16,7 @@ group  pos  type 1
 group  neg  type 2
 group  chains      type 1 2 
 
-if "${isCharged} == True" then &
+if "${charge} == charged" then &
   "set group pos charge 1.0 " &
   "set group neg charge -1.0" &
   "special_bonds lj 0.0 1.0 1.0 coul 1.0 1.0 1.0 # taken from Nayan's coacervate paper" &
@@ -26,15 +26,17 @@ else &
 ####################################
 ####  VARIABLES DEFINITION
 ####################################
-# variables from input
+# variables from job statepoint
+variable chain_length equal ${L} 
+variable num_chains equal ${N}    
 variable epsilon_PS equal ${epLJ}
-variable thickFinal equal ${D}
-variable Temp2 equal ${T}
+variable bulk_density equal ${rho_bulk}
+variable Temp equal ${T}
+variable sigma_sub equal ${subSigma}
+variable num_layers equal ${subLayers}
+
 
 # Equilibration variables
-variable Temp equal 1.5
-variable PressAnn equal 10.0
-variable PressEq equal 0.0
 variable dt equal 0.005
 variable Tdamping equal 100*${dt}
 variable Pdamping equal 1000*${dt}
@@ -45,18 +47,23 @@ variable mass_chains equal mass(chains)
 variable zmin equal bound(chains,zmin)
 variable zmax equal bound(chains,zmax)
 variable chainVol equal abs(v_zmax-v_zmin)*lx*ly # periodic in xy directions
-variable slabDensity equal ${mass_chains}/v_chainVol
+variable chainDensity equal ${mass_chains}/v_chainVol
 
 # runtimes 
 variable runtime equal 20000
 variable runtimeShort equal 10000
 
-# final thickness calculation      
-variable target_density equal 0.8
-variable n_atoms equal atoms
-variable Lbox equal (${n_atoms}/(${target_density}*${thickFinal}))^0.5/2 # half of total thickness
-variable thick2 equal ${thickFinal}/2
+# initial box size density 
+variable target_density equal ${bulk_density}
+variable chain_types equal 2
+variable tot_chains equal ${chain_types}*${num_chains}
+variable n_atoms equal ${chain_length}*${tot_chains}
+
+variable Lxy equal 5*sqrt(${chain_length})+10 # make sure that box size is large enough, about 5 time Rg
+variable Lz equal ${n_atoms}/${Lxy}^2/${target_density}
+variable thick2 equal ${Lz}/2
 variable thick1 equal ${thick2}+4.0
+variable Lbox equal ${Lxy}/2
 
 ####################################
 #### THERMO-STYLE
@@ -66,18 +73,23 @@ thermo  ${thermoT}
 
 compute chainTemp chains temp 
 compute	stressA all stress/atom NULL
-compute	p all reduce sum c_stressA[1] c_stressA[2] c_stressA[3]
-variable pz equal -(c_p[3])/(vol)
-variable pxy equal -(c_p[1]+c_p[2])/(2*vol)
-
 compute pSlab chains reduce sum c_stressA[1] c_stressA[2] c_stressA[3] c_stressA[4] c_stressA[5] c_stressA[6]
-variable pTotChains equal -(c_pSlab[1]+c_pSlab[2]+c_pSlab[3])/(3*vol)
-variable pzChains equal -(c_pSlab[3])/(vol)
-variable pxyChains equal -(c_pSlab[1]+c_pSlab[2])/(2*vol)
 
-thermo_style	custom step time temp c_chainTemp ebond epair ecoul evdwl ke etotal enthalpy vol v_chainVol density v_slabDensity press v_pTotChains v_pxy v_pxyChains v_pz v_pzChains  
+compute stressPoly chains stress/atom chainTemp
+compute pChainxx chains reduce sum c_stressPoly[1] 
+compute pChainyy chains reduce sum c_stressPoly[2] 
+compute pChainzz chains reduce sum c_stressPoly[3] 
+variable pChainxxv equal -c_pChainxx/v_chainVol
+variable pChainyyv equal -c_pChainyy/v_chainVol
+variable pChainzzv equal -c_pChainzz/v_chainVol
+variable pChain equal (v_pChainxxv+v_pChainyyv+v_pChainzzv)/3
+
+variable pxxChains equal -(c_pSlab[1])/(v_chainVol)
+variable pyyChains equal -(c_pSlab[2])/(v_chainVol)
+variable pzzChains equal -(c_pSlab[3])/(v_chainVol)
+variable pTotChains equal (v_pxxChains+v_pyyChains+v_pzzChains)/3
+thermo_style custom step time c_chainTemp epair ecoul evdwl ke etotal enthalpy vol v_chainVol density v_chainDensity press v_pTotChains v_pChain pxx v_pxxChains v_pChainxxv pyy v_pyyChains v_pChainyyv pzz v_pzzChains v_pChainzzv
 thermo_modify line yaml format none
-
 ####################################
 #### INTEGRATION
 ####################################
