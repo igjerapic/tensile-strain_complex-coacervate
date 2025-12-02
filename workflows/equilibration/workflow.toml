@@ -1,0 +1,61 @@
+[workspace]
+value_file = "signac_statepoint.json"
+
+# default settings for the actions
+[default.action]
+command = "python actions.py --action $ACTION_NAME {directories}"
+
+[default.action.resources]
+processes.per_submission = 8
+threads_per_process = 4
+memory_per_cpu_mb = 512
+
+[default.action.submit_options.habrok]
+setup = """
+module load LAMMPS/23Jun2022-foss-2021b-kokkos
+module unload SciPy-bundle/2021.10-foss-2021b
+module load Anaconda3/2024.02-1
+conda activate bsa
+"""
+output_file_path = "slurm_outs"
+
+[[action]]
+name = "makedirs"
+command = "(cd workspace/{directory} && mkdir lmp_bin lmp_data lmp_trj figs)"
+products = ["lmp_data", "lmp_bin", "lmp_trj", "figs"]
+[action.resources]
+processes.per_submission = 1
+
+[[action]]
+name = "pack"
+previous_actions = ["makedirs"]
+products = ["pack.done"] 
+[action.group]
+maximum_size = 1
+[action.resources]
+processes.per_submission = 1
+threads_per_process = 1
+
+### EQUILIBRATION ###
+[[action]]
+name = "equil"
+previous_actions = ["pack"]
+products = ["equil.done"]
+launchers = ["mpi"]
+[action.resources]
+walltime.per_submission = "16:00:00"
+[action.group]
+maximum_size = 1
+[[action.group.include]]
+condition = ["/charge", "==", "charged"]
+
+[[action]]
+from = "equil"
+[action.resources]
+walltime.per_submission = "4:00:00"
+processes.per_submission = 4
+threads_per_process = 2
+memory_per_cpu_mb = 512
+[[action.group.include]]
+condition = ["/charge", "==", "neutral"]
+
