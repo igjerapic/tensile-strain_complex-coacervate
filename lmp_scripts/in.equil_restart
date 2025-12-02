@@ -28,7 +28,6 @@ dielectric 1.0
 ####################################
 #### EQUILIBRATION
 ####################################
-change_box all z delta 0 ${Lz}
 fix stabilize all momentum 1 linear 1 1 1
 
 velocity top_sub set 0.0 0.0 0.0 

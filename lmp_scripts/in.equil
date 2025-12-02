@@ -16,13 +16,13 @@ variable bin_dir string "${JOBDIR}/lmp_bin"
 variable trj_dir string "${JOBDIR}/lmp_trj"
 
 processors * * 1 # system is confined in Z direction, better to have only one processor there
-variable restartFile string  ${bin_dir}/startEqui.bin
-variable restartFile_exists equal is_file(${restartFile})
-if ${restartFile_exists} then & 
-  "read_restart ${restartFile}" &
-  "change_box all boundary p p f" &
-  "include ${SETTINGS_FILE}" &
-  "jump SELF EQUILIBRATION" 
+# variable restartFile string  ${bin_dir}/startEqui.bin
+# variable restartFile_exists equal is_file(${restartFile})
+# if ${restartFile_exists} then & 
+#   "read_restart ${restartFile}" &
+#   "change_box all boundary p p f" &
+#   "include ${SETTINGS_FILE}" &
+#   "jump SELF EQUILIBRATION" 
 
 read_data ${data_dir}/packed.data
 change_box all boundary p p f 
@@ -230,23 +230,23 @@ undump mydumpRigid
 ####################################
 #### EQUILIBRATION
 ####################################
-label EQUILIBRATION
-dielectric 1.0
-variable lj_cut1 equal 1.12246
-variable lj_cut2 equal 2.5
-if "${charge} == charged" then &
-  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2} 10.0" &
-  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2} 10.0" &
-  "pair_coeff    3 3 0.0 1.0 2.5 10.0" & 
-  "pair_coeff    4 * 0.0 1.0 2.5 10.0" & 
-  "pair_coeff    5 * 0.0 1.0 2.5 10.0" &
-else &
-  "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2}" &
-  "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2}" &
-  "pair_coeff    3 3 0.0 1.0 2.5" &  
-  "pair_coeff    4 * 0.0 1.0 2.5" &  
-  "pair_coeff    5 * 0.0 1.0 2.5" &
-
+# label EQUILIBRATION
+# dielectric 1.0
+# variable lj_cut1 equal 1.12246
+# variable lj_cut2 equal 2.5
+# if "${charge} == charged" then &
+#   "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2} 10.0" &
+#   "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2} 10.0" &
+#   "pair_coeff    3 3 0.0 1.0 2.5 10.0" & 
+#   "pair_coeff    4 * 0.0 1.0 2.5 10.0" & 
+#   "pair_coeff    5 * 0.0 1.0 2.5 10.0" &
+# else &
+#   "pair_coeff    1*2 1*2 1.0 1.0 ${lj_cut2}" &
+#   "pair_coeff    1*2 3 ${epsilon_PS} 1.0 ${lj_cut2}" &
+#   "pair_coeff    3 3 0.0 1.0 2.5" &  
+#   "pair_coeff    4 * 0.0 1.0 2.5" &  
+#   "pair_coeff    5 * 0.0 1.0 2.5" &
+# 
 balance 0.9 shift z 10 1.0 weight neigh 0.8 
 fix stabilize all momentum 1 linear 1 1 1
 
